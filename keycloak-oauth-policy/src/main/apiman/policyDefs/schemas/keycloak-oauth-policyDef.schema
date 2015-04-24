@@ -80,6 +80,12 @@
         "type": "string"
       }
     },
+    "delegateKerberosTicket": {
+      "title": "Delegate Kerberos Ticket",
+      "description": "Delegate the embedded Kerberos Ticket to the Service (via the Authorization header).",
+      "type": "boolean",
+      "default": false
+    },
     "forwardAuthInfo": {
       "title": "Forward Keycloak Token Information",
       "description": "Fields from the token can be set as headers and forwarded to the Service. Access_token corresponds to the full token.",

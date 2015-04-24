@@ -376,7 +376,7 @@ public class KeycloakOauthConfigBean {
         }
     }
 
-    public boolean getForwardKerberosToken() {
+    public boolean delegateKerberosTicket() {
         // TODO Auto-generated method stub
         return false;
     }

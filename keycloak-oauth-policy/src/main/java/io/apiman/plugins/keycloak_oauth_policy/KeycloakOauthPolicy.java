@@ -135,7 +135,7 @@ public class KeycloakOauthPolicy extends AbstractMappedPolicy<KeycloakOauthConfi
             AccessToken parsedToken = RSATokenVerifier.verifyToken(rawToken, config.getRealmCertificate()
                     .getPublicKey(), config.getRealm());
 
-            forwardKerberosToken(request, config, parsedToken);
+            delegateKerberosTicket(request, config, parsedToken);
             forwardHeaders(request, config, rawToken, parsedToken);
             stripAuthTokens(request, config);
 
@@ -151,11 +151,11 @@ public class KeycloakOauthPolicy extends AbstractMappedPolicy<KeycloakOauthConfi
         return isFailedHolder.setValue(false);
     }
 
-    private void forwardKerberosToken(ServiceRequest request, KeycloakOauthConfigBean config, AccessToken parsedToken) {
+    private void delegateKerberosTicket(ServiceRequest request, KeycloakOauthConfigBean config, AccessToken parsedToken) {
         String serializedGssCredential = (String) parsedToken.getOtherClaims()
                 .get(KerberosConstants.GSS_DELEGATION_CREDENTIAL);
 
-        if (config.getForwardKerberosToken()) {
+        if (config.delegateKerberosTicket()) {
             request.getHeaders().put(AUTHORIZATION_KEY, NEGOTIATE + serializedGssCredential);
         }
     }
