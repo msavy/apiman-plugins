@@ -44,7 +44,7 @@ import org.keycloak.util.PemUtils;
 @Generated("org.jsonschema2pojo")
 @JsonPropertyOrder({ "requireOauth", "requireTransportSecurity", "blacklistUnsafeTokens",
     "stripTokens", "realm", "realmCertificateString", "applicationRoleMappings",
-    "realmRoleMappings", "forwardAuthInfo" })
+    "realmRoleMappings", "delegateKerberosTicket", "forwardAuthInfo" })
 public class KeycloakOauthConfigBean {
 
     /**
@@ -111,6 +111,14 @@ public class KeycloakOauthConfigBean {
     @JsonProperty("realmRoleMappings")
     @JsonDeserialize(as = java.util.LinkedHashSet.class)
     private Set<String> realmRoleMappings = new LinkedHashSet<>();
+
+    /**
+     * Delegate Kerberos Ticket
+     * <p>
+     * Delegate the embedded Kerberos Ticket to the Service (via the Authorization header).
+     */
+    @JsonProperty("delegateKerberosTicket")
+    private boolean delegateKerberosTicket = false;
 
     /**
      * Forward Keycloak token information
@@ -321,6 +329,29 @@ public class KeycloakOauthConfigBean {
         this.realmRoleMappings = realmRoleMappings;
     }
 
+    /**
+     * Delegate Kerberos Ticket
+     * <p>
+     * Delegate the embedded Kerberos Ticket to the Service (via the Authorization header).
+     *
+     * @return true if should delegate token; else false
+     */
+    @JsonProperty("delegateKerberosTicket")
+    public boolean getDelegateKerberosTicket() {
+        return delegateKerberosTicket;
+    }
+
+    /**
+     * Delegate Kerberos Ticket
+     * <p>
+     * Delegate the embedded Kerberos Ticket to the Service (via the Authorization header).
+     *
+     * @param value the value
+     */
+    @JsonProperty("delegateKerberosTicket")
+    public void setDelegateKerberosTicket(boolean value) {
+        this.delegateKerberosTicket = value;
+    }
 
     /**
      * Forward Keycloak token information
@@ -348,7 +379,6 @@ public class KeycloakOauthConfigBean {
         this.forwardAuthInfo = forwardAuthInfo;
     }
 
-
     @Override
     public String toString() {
         return ToStringBuilder.reflectionToString(this);
@@ -374,10 +404,5 @@ public class KeycloakOauthConfigBean {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public boolean getDelegateKerberosTicket() {
-        // TODO Auto-generated method stub
-        return false;
     }
 }

@@ -43,10 +43,10 @@ import org.keycloak.representations.AccessToken.Access;
  */
 public class KeycloakOauthPolicy extends AbstractMappedPolicy<KeycloakOauthConfigBean> {
 
-    private static final String NEGOTIATE = "Negotiate "; //$NON-NLS-1$
     private static final String AUTHORIZATION_KEY = "Authorization"; //$NON-NLS-1$
     private static final String ACCESS_TOKEN_QUERY_KEY = "access_token"; //$NON-NLS-1$
     private static final String BEARER = "Bearer "; //$NON-NLS-1$
+    private static final String NEGOTIATE = "Negotiate "; //$NON-NLS-1$
     private final PolicyFailureFactory failureFactory = new PolicyFailureFactory();
 
     /**
