@@ -32,6 +32,7 @@ import io.apiman.plugins.keycloak_oauth_policy.util.Holder;
 import org.apache.commons.lang.StringUtils;
 import org.keycloak.RSATokenVerifier;
 import org.keycloak.VerificationException;
+import org.keycloak.constants.KerberosConstants;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.AccessToken.Access;
 
@@ -42,8 +43,10 @@ import org.keycloak.representations.AccessToken.Access;
  */
 public class KeycloakOauthPolicy extends AbstractMappedPolicy<KeycloakOauthConfigBean> {
 
-    private final String AUTHORIZATION_KEY = "Authorization"; //$NON-NLS-1$
-    private final String ACCESS_TOKEN_QUERY_KEY = "access_token"; //$NON-NLS-1$
+    private static final String NEGOTIATE = "Negotiate "; //$NON-NLS-1$
+    private static final String AUTHORIZATION_KEY = "Authorization"; //$NON-NLS-1$
+    private static final String ACCESS_TOKEN_QUERY_KEY = "access_token"; //$NON-NLS-1$
+    private static final String BEARER = "Bearer "; //$NON-NLS-1$
     private final PolicyFailureFactory failureFactory = new PolicyFailureFactory();
 
     /**
@@ -132,6 +135,7 @@ public class KeycloakOauthPolicy extends AbstractMappedPolicy<KeycloakOauthConfi
             AccessToken parsedToken = RSATokenVerifier.verifyToken(rawToken, config.getRealmCertificate()
                     .getPublicKey(), config.getRealm());
 
+            forwardKerberosToken(request, config, parsedToken);
             forwardHeaders(request, config, rawToken, parsedToken);
             stripAuthTokens(request, config);
 
@@ -145,6 +149,15 @@ public class KeycloakOauthPolicy extends AbstractMappedPolicy<KeycloakOauthConfi
             chain.doFailure(failureFactory.verificationException(context, e));
         }
         return isFailedHolder.setValue(false);
+    }
+
+    private void forwardKerberosToken(ServiceRequest request, KeycloakOauthConfigBean config, AccessToken parsedToken) {
+        String serializedGssCredential = (String) parsedToken.getOtherClaims()
+                .get(KerberosConstants.GSS_DELEGATION_CREDENTIAL);
+
+        if (config.getForwardKerberosToken()) {
+            request.getHeaders().put(AUTHORIZATION_KEY, NEGOTIATE + serializedGssCredential);
+        }
     }
 
     private boolean doTokenRoleAuth(KeycloakOauthConfigBean config, AccessToken parsedToken) {
@@ -175,8 +188,8 @@ public class KeycloakOauthPolicy extends AbstractMappedPolicy<KeycloakOauthConfi
     private String getRawAuthToken(ServiceRequest request) {
         String rawToken = StringUtils.strip(request.getHeaders().get(AUTHORIZATION_KEY));
 
-        if (rawToken != null && StringUtils.startsWith(rawToken, "Bearer ")) { //$NON-NLS-1$
-            rawToken = StringUtils.removeStart(rawToken, "Bearer "); //$NON-NLS-1$
+        if (rawToken != null && StringUtils.startsWith(rawToken, BEARER)) {
+            rawToken = StringUtils.removeStart(rawToken, BEARER);
         } else {
             rawToken = request.getQueryParams().get(ACCESS_TOKEN_QUERY_KEY);
         }

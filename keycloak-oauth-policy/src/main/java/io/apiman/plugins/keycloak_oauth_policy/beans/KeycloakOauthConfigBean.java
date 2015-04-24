@@ -375,4 +375,9 @@ public class KeycloakOauthConfigBean {
             throw new RuntimeException(e);
         }
     }
+
+    public boolean getForwardKerberosToken() {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }
