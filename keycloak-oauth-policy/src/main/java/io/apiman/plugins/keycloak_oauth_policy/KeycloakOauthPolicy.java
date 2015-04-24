@@ -155,7 +155,7 @@ public class KeycloakOauthPolicy extends AbstractMappedPolicy<KeycloakOauthConfi
         String serializedGssCredential = (String) parsedToken.getOtherClaims()
                 .get(KerberosConstants.GSS_DELEGATION_CREDENTIAL);
 
-        if (config.delegateKerberosTicket()) {
+        if (config.getDelegateKerberosTicket()) {
             request.getHeaders().put(AUTHORIZATION_KEY, NEGOTIATE + serializedGssCredential);
         }
     }
