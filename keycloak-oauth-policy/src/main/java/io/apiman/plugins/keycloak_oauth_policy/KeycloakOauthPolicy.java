@@ -35,6 +35,7 @@ import org.apache.commons.lang.StringUtils;
 import org.keycloak.RSATokenVerifier;
 import org.keycloak.VerificationException;
 import org.keycloak.constants.KerberosConstants;
+import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.AccessToken.Access;
 
@@ -80,8 +81,7 @@ public class KeycloakOauthPolicy extends AbstractMappedPolicy<KeycloakOauthConfi
         } else if (doTokenAuth(successStatus, request, context, config, chain, rawToken).getValue()) {
             // Transport security check
             if (config.getRequireTransportSecurity() && !request.isTransportSecure()) {
-                // If we've detected a situation where we should blacklist a
-                // token
+                // If we've detected a situation where we should blacklist a token
                 if (config.getBlacklistUnsafeTokens()) {
                     blacklistToken(context, rawToken, new IAsyncResultHandler<Void>() {
                         @Override
@@ -133,6 +133,19 @@ public class KeycloakOauthPolicy extends AbstractMappedPolicy<KeycloakOauthConfi
             IPolicyContext context, KeycloakOauthConfigBean config, IPolicyChain<ServiceRequest> chain,
             String rawToken) {
         try {
+
+            //JWSInput input = new JWSInput(rawToken).readContentAsString();
+
+            System.out.println("Token -----");
+            System.out.println(new JWSInput(rawToken).readContentAsString());
+
+            //AccessToken token = input.readJsonContent(AccessToken.class);
+
+            System.out.println("Apiman -----");
+            System.out.println("Current system time: " + System.currentTimeMillis());
+            //ToStringBuilder.reflectionToString(token);
+
+
             AccessToken parsedToken = RSATokenVerifier.verifyToken(rawToken, config.getRealmCertificate()
                     .getPublicKey(), config.getRealm());
 
