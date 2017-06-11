@@ -25,19 +25,19 @@ import io.apiman.plugins.auth3scale.util.report.batchedreporter.AbstractReporter
 /**
  * @author Marc Savy {@literal <msavy@redhat.com>}
  */
-public class ApiKeyFactory implements AuthRepFactory {
+public class ApiKeyAuthRepFactory implements AuthRepFactory {
     private final ApiKeyAuthReporter reporter = new ApiKeyAuthReporter();
     private final ApiKeyCachingAuthenticator authCache = new ApiKeyCachingAuthenticator();
 
 
     @Override
-    public ApiKeyAuthExecutor createAuth(Content config, ApiRequest request, IPolicyContext context) {
-        return new ApiKeyAuthExecutor(config, request, context, authCache);
+    public ApiKeyAuth createAuth(Content config, ApiRequest request, IPolicyContext context) {
+        return new ApiKeyAuth(config, request, context, authCache);
     }
 
     @Override
-    public ApiKeyRepExecutor createRep(Content config, ApiResponse response, ApiRequest request, IPolicyContext context) {
-        return new ApiKeyRepExecutor(config, request, response, context, reporter, authCache);
+    public ApiKeyRep createRep(Content config, ApiResponse response, ApiRequest request, IPolicyContext context) {
+        return new ApiKeyRep(config, request, response, context, reporter, authCache);
     }
 
     @Override

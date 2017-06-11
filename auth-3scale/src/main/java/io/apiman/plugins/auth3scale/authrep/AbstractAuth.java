@@ -17,7 +17,6 @@ package io.apiman.plugins.auth3scale.authrep;
 
 import io.apiman.gateway.engine.async.IAsyncHandler;
 import io.apiman.gateway.engine.async.IAsyncResultHandler;
-import io.apiman.gateway.engine.beans.Api;
 import io.apiman.gateway.engine.beans.ApiRequest;
 import io.apiman.gateway.engine.beans.PolicyFailure;
 import io.apiman.gateway.engine.policy.IPolicyContext;
@@ -30,20 +29,16 @@ import io.apiman.plugins.auth3scale.util.report.batchedreporter.ReportData;
  * @author Marc Savy {@literal <msavy@redhat.com>}
  * @param <T> The reporter
  */
-public abstract class AbstractAuthExecutor<T extends AbstractReporter<? extends ReportData>>
+public abstract class AbstractAuth<T extends AbstractReporter<? extends ReportData>>
     extends AbstractAuthRepBase {
 
-    private AbstractAuthExecutor(Content config, ApiRequest request, Api api, IPolicyContext context) {
-        super(config, request);
+    public AbstractAuth(Content config, ApiRequest request, IPolicyContext context) {
+        super(config, request, context);
     }
 
-    public AbstractAuthExecutor(Content config, ApiRequest request, IPolicyContext context) {
-        this(config, request, request.getApi(), context);
-    }
-
-    public abstract AbstractAuthExecutor<T> policyFailureHandler(IAsyncHandler<PolicyFailure> policyFailureHandler);
+    public abstract AbstractAuth<T> policyFailureHandler(IAsyncHandler<PolicyFailure> policyFailureHandler);
 
     public abstract AuthTypeEnum getType();
 
-    public abstract AbstractAuthExecutor<T> auth(IAsyncResultHandler<Void> resultHandler);
+    public abstract AbstractAuth<T> auth(IAsyncResultHandler<Void> resultHandler);
 }

@@ -16,7 +16,9 @@
 
 package io.apiman.plugins.auth3scale.authrep;
 
+import io.apiman.common.logging.IApimanLogger;
 import io.apiman.gateway.engine.beans.ApiRequest;
+import io.apiman.gateway.engine.policy.IPolicyContext;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.ProxyRule;
 import io.apiman.plugins.auth3scale.util.ParameterMap;
@@ -27,11 +29,15 @@ import java.text.MessageFormat;
 public abstract class AbstractAuthRepBase {
     private Content config;
     private ApiRequest request;
+    private IApimanLogger logger;
 
-    public AbstractAuthRepBase(Content config, ApiRequest request) {
+    public AbstractAuthRepBase(Content config, ApiRequest request, IPolicyContext context) {
         this.config = config;
         this.request = request;
+        this.logger = context.getLogger(AbstractAuthRepBase.class);
     }
+
+    public abstract AbstractAuthRepBase setAuthRepStrategy();
 
     protected ParameterMap setIfNotNull(ParameterMap in, String k, String v) {
         if (v == null) {
@@ -44,14 +50,20 @@ public abstract class AbstractAuthRepBase {
     protected ParameterMap buildRepMetrics() {
         ParameterMap pm = new ParameterMap(); // TODO could be interesting to cache a partially built map and just replace values?
 
-        int[] matches = config.getProxy().getRouteMatcher().match(request.getDestination());
-        if (matches.length > 0) { // TODO could put this into request and process it up front. This logic could be removed from bean.
+        int[] matches = config.getProxy().match(request.getDestination());
+        if (matches.length > 0) {
             for (int matchIndex : matches) {
-                ProxyRule proxyRule = config.getProxy().getProxyRules().get(matchIndex+1); // Get specific proxy rule that matches. (e.g. / or /foo/bar)
+                // Get specific proxy rule that matches. (e.g. / or /foo/bar)
+                ProxyRule proxyRule = config.getProxy().getProxyRules().get(matchIndex);
+                // Name of the metric as defined in 3scale
                 String metricName = proxyRule.getMetricSystemName();
+                // Ensure the matching rule applies to the request's HTTP Method
+                if (!proxyRule.getHttpMethod().equalsIgnoreCase(request.getType()))
+                    continue;
 
+                logger.trace("Matched rule {0}", proxyRule);
                 if (pm.containsKey(metricName)) {
-                    long newValue = pm.getLongValue(metricName) + proxyRule.getDelta(); // Add delta.
+                    long newValue = pm.getLongValue(metricName) + proxyRule.getDelta(); // Increment delta.
                     pm.setLongValue(metricName, newValue);
                 } else {
                     pm.setLongValue(metricName, proxyRule.getDelta()); // Otherwise value is delta.
@@ -62,7 +74,7 @@ public abstract class AbstractAuthRepBase {
     }
 
     protected boolean hasRoutes(ApiRequest req) {
-        return config.getProxy().getRouteMatcher().match(req.getDestination()).length > 0;
+        return config.getProxy().match(req.getDestination()).length > 0;
     }
 
     protected String getIdentityElement(Content config, ApiRequest request, String canonicalName)  {

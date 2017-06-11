@@ -36,7 +36,7 @@ import io.apiman.gateway.engine.components.http.HttpMethod;
 import io.apiman.gateway.engine.components.http.IHttpClientRequest;
 import io.apiman.gateway.engine.policy.IPolicyContext;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
-import io.apiman.plugins.auth3scale.authrep.AbstractRepExecutor;
+import io.apiman.plugins.auth3scale.authrep.AbstractRep;
 import io.apiman.plugins.auth3scale.util.ParameterMap;
 import io.apiman.plugins.auth3scale.util.Status;
 import io.apiman.plugins.auth3scale.util.report.AuthResponseHandler;
@@ -48,7 +48,7 @@ import java.time.OffsetDateTime;
  * @author Marc Savy {@literal <msavy@redhat.com>}
  */
 @SuppressWarnings("nls")
-public class ApiKeyRepExecutor extends AbstractRepExecutor<ApiKeyAuthReporter> {
+public class ApiKeyRep extends AbstractRep<ApiKeyAuthReporter> {
     private static final URI REPORT_ENDPOINT = URI.create(DEFAULT_BACKEND+REPORT_PATH);
     private final Content config;
     private final ApiRequest request;
@@ -59,7 +59,7 @@ public class ApiKeyRepExecutor extends AbstractRepExecutor<ApiKeyAuthReporter> {
     private final IPolicyFailureFactoryComponent failureFactory;
     private final IApimanLogger logger;
 
-    public ApiKeyRepExecutor(Content config, ApiRequest request, ApiResponse response, IPolicyContext context, ApiKeyAuthReporter reporter, ApiKeyCachingAuthenticator authCache) {
+    public ApiKeyRep(Content config, ApiRequest request, ApiResponse response, IPolicyContext context, ApiKeyAuthReporter reporter, ApiKeyCachingAuthenticator authCache) {
         super(config, request, response, context, reporter, authCache);
         this.config = config;
         this.request = request;
@@ -68,12 +68,12 @@ public class ApiKeyRepExecutor extends AbstractRepExecutor<ApiKeyAuthReporter> {
         this.authCache = authCache;
         this.httpClient = context.getComponent(IHttpClientComponent.class);
         this.failureFactory = context.getComponent(IPolicyFailureFactoryComponent.class);
-        this.logger = context.getLogger(ApiKeyRepExecutor.class);
+        this.logger = context.getLogger(ApiKeyRep.class);
     }
 
     // Rep seems to require POST with URLEncoding
     @Override
-    public ApiKeyRepExecutor rep() {
+    public ApiKeyRep rep() {
         doRep();
         return this;
     }

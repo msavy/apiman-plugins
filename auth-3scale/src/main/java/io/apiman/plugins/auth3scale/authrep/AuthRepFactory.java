@@ -25,7 +25,7 @@ import io.apiman.plugins.auth3scale.util.report.batchedreporter.AbstractReporter
  * @author Marc Savy {@literal <msavy@redhat.com>}
  */
 public interface AuthRepFactory {
-    AbstractAuthExecutor<?> createAuth(Content config, ApiRequest request, IPolicyContext context);
-    AbstractRepExecutor<?> createRep(Content config, ApiResponse response, ApiRequest request, IPolicyContext context);
+    AbstractAuth<?> createAuth(Content config, ApiRequest request, IPolicyContext context);
+    AbstractRep<?> createRep(Content config, ApiResponse response, ApiRequest request, IPolicyContext context);
     AbstractReporter<?> getReporter();
 }

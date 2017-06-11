@@ -37,7 +37,7 @@ import io.apiman.gateway.engine.components.http.IHttpClientRequest;
 import io.apiman.gateway.engine.policy.IPolicyContext;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.AuthTypeEnum;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
-import io.apiman.plugins.auth3scale.authrep.AbstractAuthExecutor;
+import io.apiman.plugins.auth3scale.authrep.AbstractAuth;
 import io.apiman.plugins.auth3scale.authrep.AuthRepConstants;
 import io.apiman.plugins.auth3scale.util.ParameterMap;
 import io.apiman.plugins.auth3scale.util.report.AuthResponseHandler;
@@ -46,7 +46,7 @@ import io.apiman.plugins.auth3scale.util.report.AuthResponseHandler;
  * @author Marc Savy {@literal <msavy@redhat.com>}
  */
 @SuppressWarnings("nls")
-public class ApiKeyAuthExecutor extends AbstractAuthExecutor<ApiKeyAuthReporter> {
+public class ApiKeyAuth extends AbstractAuth<ApiKeyAuthReporter> {
     // TODO Can't remember the place where we put the special exceptions for this...
     private static final AsyncResultImpl<Void> OK_CACHED = AsyncResultImpl.create((Void) null);
     private static final AsyncResultImpl<Void> FAIL_PROVIDE_USER_KEY = AsyncResultImpl.create(new RuntimeException("No user apikey provided!"));
@@ -62,7 +62,7 @@ public class ApiKeyAuthExecutor extends AbstractAuthExecutor<ApiKeyAuthReporter>
     // Handlers
     private IAsyncHandler<PolicyFailure> policyFailureHandler;
 
-    ApiKeyAuthExecutor(Content config, ApiRequest request, IPolicyContext context, ApiKeyCachingAuthenticator authCache) {
+    ApiKeyAuth(Content config, ApiRequest request, IPolicyContext context, ApiKeyCachingAuthenticator authCache) {
         super(config, request, context);
         this.config = config;
         this.request = request;
@@ -70,11 +70,11 @@ public class ApiKeyAuthExecutor extends AbstractAuthExecutor<ApiKeyAuthReporter>
         this.authCache = authCache;
         this.httpClient = context.getComponent(IHttpClientComponent.class);
         this.failureFactory = context.getComponent(IPolicyFailureFactoryComponent.class);
-        this.logger = context.getLogger(ApiKeyAuthExecutor.class);
+        this.logger = context.getLogger(ApiKeyAuth.class);
     }
 
     @Override
-    public ApiKeyAuthExecutor auth(IAsyncResultHandler<Void> resultHandler) {
+    public ApiKeyAuth auth(IAsyncResultHandler<Void> resultHandler) {
         doAuth(resultHandler);
         return this;
     }
@@ -86,7 +86,7 @@ public class ApiKeyAuthExecutor extends AbstractAuthExecutor<ApiKeyAuthReporter>
             return;
         }
 
-        if (!hasRoutes(request)) { // TODO Optimise
+        if (!hasRoutes(request)) {
             resultHandler.handle(FAIL_NO_ROUTE);
             return;
         }
@@ -161,7 +161,7 @@ public class ApiKeyAuthExecutor extends AbstractAuthExecutor<ApiKeyAuthReporter>
     }
 
     @Override
-    public ApiKeyAuthExecutor policyFailureHandler(IAsyncHandler<PolicyFailure> policyFailureHandler) {
+    public ApiKeyAuth policyFailureHandler(IAsyncHandler<PolicyFailure> policyFailureHandler) {
         this.policyFailureHandler = policyFailureHandler;
         return this;
     }

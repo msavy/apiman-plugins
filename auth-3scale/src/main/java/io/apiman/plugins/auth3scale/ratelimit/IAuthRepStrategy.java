@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 JBoss Inc
+ * Copyright 2017 JBoss Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.apiman.plugins.auth3scale.util.report.batchedreporter;
 
-import java.net.URI;
+package io.apiman.plugins.auth3scale.ratelimit;
 
-/**
- * @author Marc Savy {@literal <msavy@redhat.com>}
- */
-public interface ReportToSend {
-    String getData();
-    String getEncoding();
-    URI getEndpoint();
+import io.apiman.gateway.engine.async.IAsyncResultHandler;
+
+public interface IAuthRepStrategy {
+    IAuthRepStrategy auth(IAsyncResultHandler<Void> resultHandler);
+
+    IAuthRepStrategy rep(IAsyncResultHandler<Void> resultHandler);
 }

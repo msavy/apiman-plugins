@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.apiman.plugins.auth3scale.authrep;
+package io.apiman.plugins.auth3scale;
 
 import io.apiman.gateway.engine.beans.ApiRequest;
 import io.apiman.gateway.engine.beans.ApiResponse;
@@ -22,12 +22,14 @@ import io.apiman.gateway.engine.components.IPeriodicComponent;
 import io.apiman.gateway.engine.policy.IPolicyContext;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.AuthTypeEnum;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
-import io.apiman.plugins.auth3scale.authrep.apikey.ApiKeyFactory;
+import io.apiman.plugins.auth3scale.authrep.AbstractAuth;
+import io.apiman.plugins.auth3scale.authrep.AbstractRep;
+import io.apiman.plugins.auth3scale.authrep.AuthRepFactory;
+import io.apiman.plugins.auth3scale.authrep.apikey.ApiKeyAuthRepFactory;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.BatchedReporter;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * @author Marc Savy {@literal <msavy@redhat.com>}
@@ -40,7 +42,7 @@ public class AuthRep {
     public AuthRep(BatchedReporter batchedReporter) {
         this.batchedReporter = batchedReporter;
 
-        ApiKeyFactory apiKeyFactory = new ApiKeyFactory();
+        ApiKeyAuthRepFactory apiKeyFactory = new ApiKeyAuthRepFactory();
 //        AppIdFactory appIdFactory = new AppIdFactory();
 //        OauthFactory oauthFactory = new OauthFactory();
 
@@ -53,16 +55,14 @@ public class AuthRep {
 //                .addReporter(oauthFactory.getReporter());
     }
 
-    public AbstractAuthExecutor<?> getAuth(Content config, ApiRequest request, IPolicyContext context) {
+    public AbstractAuth<?> getAuth(Content config, ApiRequest request, IPolicyContext context) {
         return factories.get(config.getAuthType()).createAuth(config, request, context);
     }
 
-    public AbstractRepExecutor<?> getRep(Content config, ApiResponse response, ApiRequest request, IPolicyContext context) {
+    public AbstractRep<?> getRep(Content config, ApiResponse response, ApiRequest request, IPolicyContext context) {
         safeInitialise(context);
         return factories.get(config.getAuthType()).createRep(config, response, request, context);
     }
-
-    String uuid = UUID.randomUUID().toString();
 
     // TODO Could convert to component to avoid DCL.
     private void safeInitialise(IPolicyContext context) {

@@ -28,21 +28,21 @@ import io.apiman.plugins.auth3scale.util.report.batchedreporter.ReportData;
  * @author Marc Savy {@literal <msavy@redhat.com>}
  * @param <T> the type
  */
-public abstract class AbstractRepExecutor<T extends AbstractReporter<? extends ReportData>> extends AbstractAuthRepBase {
+public abstract class AbstractRep<T extends AbstractReporter<? extends ReportData>> extends AbstractAuthRepBase {
     private ApiResponse response;
 
-    private AbstractRepExecutor(Content config, ApiRequest request, ApiResponse response, IPolicyContext context,
+    private AbstractRep(Content config, ApiRequest request, ApiResponse response, IPolicyContext context,
             ApiKeyAuthReporter reporter) {
-        super(config, request);
+        super(config, request, context);
         this.response = response;
     }
 
-    public AbstractRepExecutor(Content config, ApiRequest request, ApiResponse response, IPolicyContext context,
+    public AbstractRep(Content config, ApiRequest request, ApiResponse response, IPolicyContext context,
             ApiKeyAuthReporter reporter, CachingAuthenticator authCache) {
         this(config, request, response, context, reporter);
     }
 
-    public abstract AbstractRepExecutor<T> rep();
+    public abstract AbstractRep<T> rep();
 
     protected ParameterMap buildLog() {
         return new ParameterMap().add("code", (long) response.getCode()); //$NON-NLS-1$

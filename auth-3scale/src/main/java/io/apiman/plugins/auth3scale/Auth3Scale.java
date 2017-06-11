@@ -35,22 +35,21 @@ import io.apiman.gateway.engine.beans.ApiResponse;
 import io.apiman.gateway.engine.policies.AbstractMappedPolicy;
 import io.apiman.gateway.engine.policy.IPolicyChain;
 import io.apiman.gateway.engine.policy.IPolicyContext;
-import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.ProxyConfigRoot;
-import io.apiman.plugins.auth3scale.authrep.AuthRep;
+import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Auth3ScaleBean;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.BatchedReporter;
 
 /**
  * @author Marc Savy {@literal <msavy@redhat.com>}
  */
 @SuppressWarnings("nls")
-public class Auth3Scale extends AbstractMappedPolicy<ProxyConfigRoot> {
+public class Auth3Scale extends AbstractMappedPolicy<Auth3ScaleBean> {
     private static final String AUTH3SCALE_REQUEST = "Auth3Scale.Req";
     private static final BatchedReporter BATCHED_REPORTER = new BatchedReporter();
     private static final AuthRep authRepFactory = new AuthRep(BATCHED_REPORTER);
 
     @Override
-    protected void doApply(ApiRequest request, IPolicyContext context, ProxyConfigRoot config, IPolicyChain<ApiRequest> chain) {
-        authRepFactory.getAuth(config.getProxyConfig().getContent(), request, context)
+    protected void doApply(ApiRequest request, IPolicyContext context, Auth3ScaleBean config, IPolicyChain<ApiRequest> chain) {
+        authRepFactory.getAuth(config.getThreescaleConfig().getProxyConfig().getContent(), request, context)
                 // If a policy failure occurs, call chain.doFailure.
                 .policyFailureHandler(chain::doFailure)
                 // If succeeded or error.
@@ -66,17 +65,17 @@ public class Auth3Scale extends AbstractMappedPolicy<ProxyConfigRoot> {
     }
 
     @Override
-    protected void doApply(ApiResponse response, IPolicyContext context, ProxyConfigRoot config, IPolicyChain<ApiResponse> chain) {
+    protected void doApply(ApiResponse response, IPolicyContext context, Auth3ScaleBean config, IPolicyChain<ApiResponse> chain) {
         // Just let it go ahead, and report stuff at our leisure.
         chain.doApply(response);
 
         ApiRequest request = context.getAttribute(AUTH3SCALE_REQUEST, null);
-        authRepFactory.getRep(config.getProxyConfig().getContent(), response, request, context)
+        authRepFactory.getRep(config.getThreescaleConfig().getProxyConfig().getContent(), response, request, context)
             .rep();
     }
 
     @Override
-    protected Class<ProxyConfigRoot> getConfigurationClass() {
-        return ProxyConfigRoot.class;
+    protected Class<Auth3ScaleBean> getConfigurationClass() {
+        return Auth3ScaleBean.class;
     }
 }
