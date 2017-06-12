@@ -49,6 +49,7 @@ public class Auth3Scale extends AbstractMappedPolicy<Auth3ScaleBean> {
 
     @Override
     protected void doApply(ApiRequest request, IPolicyContext context, Auth3ScaleBean config, IPolicyChain<ApiRequest> chain) {
+        try {
         authRepFactory.getAuth(config.getThreescaleConfig().getProxyConfig().getContent(), request, context)
                 // If a policy failure occurs, call chain.doFailure.
                 .policyFailureHandler(chain::doFailure)
@@ -62,16 +63,23 @@ public class Auth3Scale extends AbstractMappedPolicy<Auth3ScaleBean> {
                         chain.throwError(result.getError());
                     }
                 });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     protected void doApply(ApiResponse response, IPolicyContext context, Auth3ScaleBean config, IPolicyChain<ApiResponse> chain) {
+        try {
         // Just let it go ahead, and report stuff at our leisure.
         chain.doApply(response);
 
         ApiRequest request = context.getAttribute(AUTH3SCALE_REQUEST, null);
         authRepFactory.getRep(config.getThreescaleConfig().getProxyConfig().getContent(), response, request, context)
             .rep();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

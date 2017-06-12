@@ -14,12 +14,20 @@
  * limitations under the License.
  */
 
-package io.apiman.plugins.auth3scale.ratelimit;
+package io.apiman.plugins.auth3scale.authrep;
 
-import io.apiman.gateway.engine.async.IAsyncResultHandler;
+import io.apiman.gateway.engine.beans.ApiRequest;
+import io.apiman.gateway.engine.beans.ApiResponse;
+import io.apiman.gateway.engine.policy.IPolicyContext;
+import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
 
-public interface IAuthRepStrategy {
-    IAuthRepStrategy auth(IAsyncResultHandler<Void> resultHandler);
+public interface IAuthStrategyFactory {
+    AbstractAuth<?>  getAuthStrategy(Content config,
+            ApiRequest request,
+            IPolicyContext context);
 
-    IAuthRepStrategy rep(IAsyncResultHandler<Void> resultHandler);
+    AbstractRep<?> getRepStrategy(Content config,
+            ApiRequest request,
+            ApiResponse response,
+            IPolicyContext context);
 }

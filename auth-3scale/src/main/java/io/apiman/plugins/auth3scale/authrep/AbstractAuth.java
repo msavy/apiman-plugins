@@ -17,11 +17,9 @@ package io.apiman.plugins.auth3scale.authrep;
 
 import io.apiman.gateway.engine.async.IAsyncHandler;
 import io.apiman.gateway.engine.async.IAsyncResultHandler;
-import io.apiman.gateway.engine.beans.ApiRequest;
 import io.apiman.gateway.engine.beans.PolicyFailure;
-import io.apiman.gateway.engine.policy.IPolicyContext;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.AuthTypeEnum;
-import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
+import io.apiman.plugins.auth3scale.util.ParameterMap;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.AbstractReporter;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.ReportData;
 
@@ -30,11 +28,11 @@ import io.apiman.plugins.auth3scale.util.report.batchedreporter.ReportData;
  * @param <T> The reporter
  */
 public abstract class AbstractAuth<T extends AbstractReporter<? extends ReportData>>
-    extends AbstractAuthRepBase {
+    implements AbstractAuthRepBase {
 
-    public AbstractAuth(Content config, ApiRequest request, IPolicyContext context) {
-        super(config, request, context);
-    }
+    public abstract AbstractAuth<T> setAuthCache(ICachingAuthenticator authCache);
+
+    public abstract AbstractAuth<T> setParameterMap(ParameterMap paramMap);
 
     public abstract AbstractAuth<T> policyFailureHandler(IAsyncHandler<PolicyFailure> policyFailureHandler);
 

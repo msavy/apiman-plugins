@@ -15,12 +15,6 @@
  */
 package io.apiman.plugins.auth3scale.authrep;
 
-import io.apiman.gateway.engine.beans.ApiRequest;
-import io.apiman.gateway.engine.beans.ApiResponse;
-import io.apiman.gateway.engine.policy.IPolicyContext;
-import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
-import io.apiman.plugins.auth3scale.authrep.apikey.ApiKeyAuthReporter;
-import io.apiman.plugins.auth3scale.util.ParameterMap;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.AbstractReporter;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.ReportData;
 
@@ -28,32 +22,14 @@ import io.apiman.plugins.auth3scale.util.report.batchedreporter.ReportData;
  * @author Marc Savy {@literal <msavy@redhat.com>}
  * @param <T> the type
  */
-public abstract class AbstractRep<T extends AbstractReporter<? extends ReportData>> extends AbstractAuthRepBase {
-    private ApiResponse response;
+public abstract class AbstractRep<T extends AbstractReporter<? extends ReportData>> implements AbstractAuthRepBase {
 
-    private AbstractRep(Content config, ApiRequest request, ApiResponse response, IPolicyContext context,
-            ApiKeyAuthReporter reporter) {
-        super(config, request, context);
-        this.response = response;
-    }
+    //public abstract AbstractRep<T> setReporter();
 
-    public AbstractRep(Content config, ApiRequest request, ApiResponse response, IPolicyContext context,
-            ApiKeyAuthReporter reporter, CachingAuthenticator authCache) {
-        this(config, request, response, context, reporter);
-    }
+    public abstract AbstractRep<T> setAuthCache(ICachingAuthenticator authCache);
+
+    public abstract AbstractRep<T> setReport(ReportData report);
 
     public abstract AbstractRep<T> rep();
 
-    protected ParameterMap buildLog() {
-        return new ParameterMap().add("code", (long) response.getCode()); //$NON-NLS-1$
-    }
-
-    @Override
-    protected ParameterMap setIfNotNull(ParameterMap in, String k, String v) {
-        if (v == null)
-            return in;
-
-        in.add(k, v);
-        return in;
-    }
 }

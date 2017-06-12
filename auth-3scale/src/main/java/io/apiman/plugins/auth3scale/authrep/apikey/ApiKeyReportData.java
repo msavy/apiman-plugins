@@ -15,6 +15,15 @@
  */
 package io.apiman.plugins.auth3scale.authrep.apikey;
 
+import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.LOG;
+import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.REFERRER;
+import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.SERVICE_ID;
+import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.SERVICE_TOKEN;
+import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.USAGE;
+import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.USER_ID;
+import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.USER_KEY;
+import static io.apiman.plugins.auth3scale.util.IMetricsBuilder.setIfNotNull;
+
 import io.apiman.plugins.auth3scale.util.ParameterMap;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.ReportData;
 
@@ -33,6 +42,7 @@ public class ApiKeyReportData implements ReportData {
     private String userId;
     private ParameterMap usage;
     private ParameterMap log;
+    private String referrer;
 
     public URI getEndpoint() {
         return endpoint;
@@ -113,8 +123,17 @@ public class ApiKeyReportData implements ReportData {
         return hashCode();
     }
 
+    private String getReferrer() {
+        return referrer;
+    }
+
+    public ApiKeyReportData setReferrer(String referrer) {
+        this.referrer = referrer;
+        return this;
+    }
+
     @Override
-    public int hashCode() { //TODO
+    public int hashCode() { // TODO
         return Objects.hash(endpoint, serviceToken, serviceId);
     }
 
@@ -151,5 +170,19 @@ public class ApiKeyReportData implements ReportData {
         } else if (!serviceToken.equals(other.serviceToken))
             return false;
         return true;
+    }
+
+    @Override
+    public String encode() {
+      ParameterMap paramMap = new ParameterMap();
+      paramMap.add(USER_KEY, getUserKey());
+      paramMap.add(SERVICE_TOKEN, getServiceToken());// maybe use endpoint properties or something. or new properties field.
+      paramMap.add(SERVICE_ID, getServiceId());
+      paramMap.add(USAGE, getUsage());
+      paramMap.add(LOG, getLog());
+
+      setIfNotNull(paramMap, REFERRER, getReferrer());
+      setIfNotNull(paramMap, USER_ID, getUserId());
+      return paramMap.encode();
     }
 }

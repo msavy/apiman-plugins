@@ -15,6 +15,8 @@
  */
 package io.apiman.plugins.auth3scale.authrep.apikey;
 
+import static io.apiman.plugins.auth3scale.util.IMetricsBuilder.setIfNotNull;
+
 import io.apiman.plugins.auth3scale.authrep.AuthRepConstants;
 import io.apiman.plugins.auth3scale.util.ParameterMap;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.AbstractReporter;

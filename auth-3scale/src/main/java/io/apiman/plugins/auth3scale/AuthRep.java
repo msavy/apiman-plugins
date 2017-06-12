@@ -22,10 +22,15 @@ import io.apiman.gateway.engine.components.IPeriodicComponent;
 import io.apiman.gateway.engine.policy.IPolicyContext;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.AuthTypeEnum;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
+import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.RateLimitingStrategy;
 import io.apiman.plugins.auth3scale.authrep.AbstractAuth;
 import io.apiman.plugins.auth3scale.authrep.AbstractRep;
 import io.apiman.plugins.auth3scale.authrep.AuthRepFactory;
+import io.apiman.plugins.auth3scale.authrep.IAuthStrategyFactory;
+import io.apiman.plugins.auth3scale.authrep.StandardStrategyFactory;
 import io.apiman.plugins.auth3scale.authrep.apikey.ApiKeyAuthRepFactory;
+import io.apiman.plugins.auth3scale.ratelimit.IAuth;
+import io.apiman.plugins.auth3scale.ratelimit.IRep;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.BatchedReporter;
 
 import java.util.HashMap;
@@ -35,33 +40,55 @@ import java.util.Map;
  * @author Marc Savy {@literal <msavy@redhat.com>}
  */
 public class AuthRep {
-    private Map<AuthTypeEnum, AuthRepFactory> factories = new HashMap<>();
+    private Map<AuthTypeEnum, AuthRepFactory> authTypeFactory = new HashMap<>();
     private BatchedReporter batchedReporter;
     private volatile boolean reporterInitialised = false;
+
+    private Map<RateLimitingStrategy, IAuthStrategyFactory> strategyFactoryMap = new HashMap<>();
 
     public AuthRep(BatchedReporter batchedReporter) {
         this.batchedReporter = batchedReporter;
 
         ApiKeyAuthRepFactory apiKeyFactory = new ApiKeyAuthRepFactory();
+
+
 //        AppIdFactory appIdFactory = new AppIdFactory();
 //        OauthFactory oauthFactory = new OauthFactory();
 
-        factories.put(AuthTypeEnum.API_KEY, apiKeyFactory);
+        authTypeFactory.put(AuthTypeEnum.API_KEY, apiKeyFactory);
 //        factories.put(AuthTypeEnum.APP_ID, appIdFactory);
 //        factories.put(AuthTypeEnum.OAUTH, oauthFactory);
 
         batchedReporter.addReporter(apiKeyFactory.getReporter());
+
+        strategyFactoryMap.put(RateLimitingStrategy.STANDARD, new StandardStrategyFactory());
+
+
 //                .addReporter(appIdFactory.getReporter())
 //                .addReporter(oauthFactory.getReporter());
     }
 
-    public AbstractAuth<?> getAuth(Content config, ApiRequest request, IPolicyContext context) {
-        return factories.get(config.getAuthType()).createAuth(config, request, context);
+    public IAuth getAuth(Content config, ApiRequest request, IPolicyContext context) {
+        AbstractAuth<?> authStrategy = getAuthStrategy(config, request, context);
+        return authTypeFactory.get(config.getAuthType())
+                .createAuth(config, request, context, authStrategy);
     }
 
-    public AbstractRep<?> getRep(Content config, ApiResponse response, ApiRequest request, IPolicyContext context) {
+    private AbstractAuth<?> getAuthStrategy(Content config, ApiRequest request, IPolicyContext context) {
+        return strategyFactoryMap.get(RateLimitingStrategy.STANDARD)
+                .getAuthStrategy(config, request, context); // TODO
+    }
+
+    public IRep getRep(Content config, ApiResponse response, ApiRequest request, IPolicyContext context) {
         safeInitialise(context);
-        return factories.get(config.getAuthType()).createRep(config, response, request, context);
+        AbstractRep<?> repStrategy = getRepStrategy(config, request, response, context);
+        return authTypeFactory.get(config.getAuthType())
+                .createRep(config, response, request, context, repStrategy);
+    }
+
+    private AbstractRep<?> getRepStrategy(Content config, ApiRequest request, ApiResponse response, IPolicyContext context) {
+        return strategyFactoryMap.get(RateLimitingStrategy.STANDARD)
+                .getRepStrategy(config, request, response, context); // TODO
     }
 
     // TODO Could convert to component to avoid DCL.
