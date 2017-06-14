@@ -112,7 +112,7 @@ public class AppIdReportData implements ReportData {
     }
 
     @Override
-    public int groupId() {
+    public int bucketId() {
         return hashCode();
     }
 
@@ -182,8 +182,8 @@ public class AppIdReportData implements ReportData {
       paramMap.add(SERVICE_TOKEN, getServiceToken());
       paramMap.add(SERVICE_ID, getServiceId());
       paramMap.add(USAGE, getUsage());
-      paramMap.add(LOG, getLog());
 
+      setIfNotNull(paramMap, LOG, getLog());
       setIfNotNull(paramMap, REFERRER, getReferrer());
       setIfNotNull(paramMap, USER_ID, getUserId());
 

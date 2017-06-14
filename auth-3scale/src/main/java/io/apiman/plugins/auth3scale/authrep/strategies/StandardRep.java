@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.apiman.plugins.auth3scale.authrep;
+package io.apiman.plugins.auth3scale.authrep.strategies;
 
 import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.AUTHREP_PATH;
 import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.DEFAULT_BACKEND;
@@ -28,7 +28,7 @@ import io.apiman.gateway.engine.components.http.HttpMethod;
 import io.apiman.gateway.engine.components.http.IHttpClientRequest;
 import io.apiman.gateway.engine.policy.IPolicyContext;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
-import io.apiman.plugins.auth3scale.authrep.apikey.ApiKeyAuthReporter;
+import io.apiman.plugins.auth3scale.authrep.AbstractRep;
 import io.apiman.plugins.auth3scale.util.Status;
 import io.apiman.plugins.auth3scale.util.report.AuthResponseHandler;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.ReportData;
@@ -37,15 +37,14 @@ import io.apiman.plugins.auth3scale.util.report.batchedreporter.ReportData;
  * @author Marc Savy {@literal <msavy@redhat.com>}
  */
 @SuppressWarnings("nls")
-public class StandardRep extends AbstractRep<ApiKeyAuthReporter> {
+public class StandardRep extends AbstractRep {
     private final Content config;
     private final ApiRequest request;
-//    private final ApiKeyAuthReporter reporter;
     private final IHttpClientComponent httpClient;
     private final IPolicyFailureFactoryComponent failureFactory;
     private final IApimanLogger logger;
 
-    private ICachingAuthenticator authCache;
+    private StandardAuthCache authCache = StandardAuth.AUTH_CACHE;
     private Object[] keyElems;
     private ReportData report;
     private IPolicyContext context;
@@ -54,8 +53,6 @@ public class StandardRep extends AbstractRep<ApiKeyAuthReporter> {
         this.config = config;
         this.request = request;
         this.context = context;
-//        this.authCache = authCache;
-//        this.reporter = reporter;
         this.httpClient = context.getComponent(IHttpClientComponent.class);
         this.failureFactory = context.getComponent(IPolicyFailureFactoryComponent.class);
         this.logger = context.getLogger(StandardRep.class);
@@ -67,8 +64,6 @@ public class StandardRep extends AbstractRep<ApiKeyAuthReporter> {
         // If was a blocking request then we already reported, so do nothing.
         if (context.getAttribute("3scale.blocking", false))
             return this;
-
-        System.out.println(DEFAULT_BACKEND + AUTHREP_PATH + report.encode());
 
         IHttpClientRequest get = httpClient.request(DEFAULT_BACKEND + AUTHREP_PATH + report.encode(),
                 HttpMethod.GET,
@@ -157,12 +152,6 @@ public class StandardRep extends AbstractRep<ApiKeyAuthReporter> {
     @Override
     public StandardRep setReport(ReportData report) {
         this.report = report;
-        return this;
-    }
-
-    @Override
-    public StandardRep setAuthCache(ICachingAuthenticator authCache) {
-        this.authCache = authCache;
         return this;
     }
 

@@ -36,8 +36,8 @@ import com.google.common.collect.EvictingQueue;
  */
 @SuppressWarnings("nls")
 public class BatchedReporter {
-    private static final int DEFAULT_REPORTING_INTERVAL = 10;
-    private static final int DEFAULT_INITIAL_WAIT = 10;
+    private static final int DEFAULT_REPORTING_INTERVAL = 5;
+    private static final int DEFAULT_INITIAL_WAIT = 5;
     private static final int DEFAULT_RETRY_QUEUE_MAXSIZE = 1000;
     private int reportingInterval = DEFAULT_REPORTING_INTERVAL;
 
@@ -148,6 +148,10 @@ public class BatchedReporter {
     }
 
     private static class RetryReporter extends AbstractReporter<ReportData> {
+        public RetryReporter() {
+            super();
+        }
+
         private Queue<ReportToSend> resendReports = EvictingQueue.create(DEFAULT_RETRY_QUEUE_MAXSIZE);
 
         @Override

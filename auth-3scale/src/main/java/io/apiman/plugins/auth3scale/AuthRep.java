@@ -27,9 +27,9 @@ import io.apiman.plugins.auth3scale.authrep.AbstractAuth;
 import io.apiman.plugins.auth3scale.authrep.AbstractRep;
 import io.apiman.plugins.auth3scale.authrep.AuthRepFactory;
 import io.apiman.plugins.auth3scale.authrep.IAuthStrategyFactory;
-import io.apiman.plugins.auth3scale.authrep.StandardStrategyFactory;
 import io.apiman.plugins.auth3scale.authrep.apikey.ApiKeyAuthRepFactory;
 import io.apiman.plugins.auth3scale.authrep.appid.AppIdAuthRepFactory;
+import io.apiman.plugins.auth3scale.authrep.strategies.StandardStrategyFactory;
 import io.apiman.plugins.auth3scale.ratelimit.IAuth;
 import io.apiman.plugins.auth3scale.ratelimit.IRep;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.BatchedReporter;
@@ -43,14 +43,10 @@ import java.util.Map;
 public class AuthRep {
     private Map<AuthTypeEnum, AuthRepFactory> authTypeFactory = new HashMap<>();
     private Map<RateLimitingStrategy, IAuthStrategyFactory> strategyFactoryMap = new HashMap<>();
-
-    private BatchedReporter batchedReporter; // TODO simplifly this by making public static as everyone wants to share it anyway?
+    private static BatchedReporter BATCHED_REPORTER; // TODO simplifly this by making public static as everyone wants to share it anyway?
     private volatile boolean reporterInitialised = false;
 
-
-    public AuthRep(BatchedReporter batchedReporter) {
-        this.batchedReporter = batchedReporter;
-
+    public AuthRep() {
         // API Key
         ApiKeyAuthRepFactory apiKeyFactory = new ApiKeyAuthRepFactory();
         authTypeFactory.put(AuthTypeEnum.API_KEY, apiKeyFactory);
@@ -70,37 +66,36 @@ public class AuthRep {
     }
 
     public IAuth getAuth(Content config, ApiRequest request, IPolicyContext context) {
-        AbstractAuth<?> authStrategy = getAuthStrategy(config, request, context);
+        AbstractAuth authStrategy = getAuthStrategy(config, request, context);
         return authTypeFactory.get(config.getAuthType())
                 .createAuth(config, request, context, authStrategy);
     }
 
-    private AbstractAuth<?> getAuthStrategy(Content config, ApiRequest request, IPolicyContext context) {
+    private AbstractAuth getAuthStrategy(Content config, ApiRequest request, IPolicyContext context) {
         return strategyFactoryMap.get(RateLimitingStrategy.STANDARD)
                 .getAuthStrategy(config, request, context); // TODO
     }
 
     public IRep getRep(Content config, ApiResponse response, ApiRequest request, IPolicyContext context) {
-        safeInitialise(context);
-        AbstractRep<?> repStrategy = getRepStrategy(config, request, response, context);
+        AbstractRep repStrategy = getRepStrategy(config, request, response, context);
         return authTypeFactory.get(config.getAuthType())
                 .createRep(config, response, request, context, repStrategy);
     }
 
-    private AbstractRep<?> getRepStrategy(Content config, ApiRequest request, ApiResponse response, IPolicyContext context) {
+    private AbstractRep getRepStrategy(Content config, ApiRequest request, ApiResponse response, IPolicyContext context) {
         return strategyFactoryMap.get(RateLimitingStrategy.STANDARD)
                 .getRepStrategy(config, request, response, context); // TODO
     }
 
-    // TODO Could convert to component to avoid DCL.
-    private void safeInitialise(IPolicyContext context) {
+    public BatchedReporter getBatchedReporter(IPolicyContext context) {
         if (!reporterInitialised) {
             synchronized (this) {
                 if (!reporterInitialised) {
-                    batchedReporter.start(context.getComponent(IPeriodicComponent.class), context.getComponent(IHttpClientComponent.class));
+                    BATCHED_REPORTER.start(context.getComponent(IPeriodicComponent.class), context.getComponent(IHttpClientComponent.class));
                     reporterInitialised = true;
                 }
             }
         }
+        return BATCHED_REPORTER;
     }
 }

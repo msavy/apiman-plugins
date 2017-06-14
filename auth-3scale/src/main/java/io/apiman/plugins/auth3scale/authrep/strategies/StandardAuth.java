@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.apiman.plugins.auth3scale.authrep;
+package io.apiman.plugins.auth3scale.authrep.strategies;
 
 import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.AUTHREP_PATH;
 import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.DEFAULT_BACKEND;
@@ -31,17 +31,19 @@ import io.apiman.gateway.engine.components.http.IHttpClientRequest;
 import io.apiman.gateway.engine.policy.IPolicyContext;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.AuthTypeEnum;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
-import io.apiman.plugins.auth3scale.authrep.apikey.ApiKeyAuthReporter;
-import io.apiman.plugins.auth3scale.util.ParameterMap;
+import io.apiman.plugins.auth3scale.authrep.AbstractAuth;
+import io.apiman.plugins.auth3scale.authrep.AbstractAuthRepBase;
 import io.apiman.plugins.auth3scale.util.report.AuthResponseHandler;
+import io.apiman.plugins.auth3scale.util.report.batchedreporter.ReportData;
 
 /**
  * @author Marc Savy {@literal <msavy@redhat.com>}
  */
 @SuppressWarnings("nls")
-public class StandardAuth extends AbstractAuth<ApiKeyAuthReporter> {
+public class StandardAuth extends AbstractAuth {
     // TODO Can't remember the place where we put the special exceptions for this...
     private static final AsyncResultImpl<Void> OK_CACHED = AsyncResultImpl.create((Void) null);
+    public static final StandardAuthCache AUTH_CACHE = new StandardAuthCache();
 
     private final Content config;
     private final ApiRequest request;
@@ -50,8 +52,7 @@ public class StandardAuth extends AbstractAuth<ApiKeyAuthReporter> {
     private final IPolicyFailureFactoryComponent failureFactory;
     private final IApimanLogger logger;
 
-    private ICachingAuthenticator authCache;
-    private ParameterMap paramMap;
+    private ReportData report;
     private Object[] keyElems;
     private long serviceId;
     private IAsyncHandler<PolicyFailure> policyFailureHandler;
@@ -75,8 +76,8 @@ public class StandardAuth extends AbstractAuth<ApiKeyAuthReporter> {
     }
 
     @Override
-    public StandardAuth setParameterMap(ParameterMap paramMap) {
-        this.paramMap = paramMap;
+    public AbstractAuthRepBase setReport(ReportData report) {
+        this.report = report;
         return this;
     }
 
@@ -85,7 +86,7 @@ public class StandardAuth extends AbstractAuth<ApiKeyAuthReporter> {
         // If we have no cache entry, then block. Otherwise, the request can immediately go
         // through and we will resolve the rate limiting status post hoc (various strategies
         // depending on settings).
-        if (authCache.isAuthCached(config, request, keyElems)) {
+        if (AUTH_CACHE.isAuthCached(config, request, keyElems)) {
             logger.debug("[ServiceId: {0}] Cached auth on request: {1}", serviceId, request);
             resultHandler.handle(OK_CACHED);
         } else {
@@ -95,7 +96,7 @@ public class StandardAuth extends AbstractAuth<ApiKeyAuthReporter> {
                 logger.debug("Blocking auth success?: {0}", result.isSuccess());
                 // Only cache if successful
                 if (result.isSuccess()) {
-                    authCache.cache(config, request, keyElems);
+                    AUTH_CACHE.cache(config, request, keyElems);
                 }
                 // Pass result up.
                 resultHandler.handle(result);
@@ -104,8 +105,8 @@ public class StandardAuth extends AbstractAuth<ApiKeyAuthReporter> {
         return this;
     }
 
-    private void doBlockingAuthRep(IAsyncResultHandler<Void> resultHandler) {
-        IHttpClientRequest get = httpClient.request(DEFAULT_BACKEND + AUTHREP_PATH + paramMap.encode(),
+    protected void doBlockingAuthRep(IAsyncResultHandler<Void> resultHandler) {
+        IHttpClientRequest get = httpClient.request(DEFAULT_BACKEND + AUTHREP_PATH + report.encode(),
                 HttpMethod.GET,
                 new AuthResponseHandler(failureFactory)
                 .failureHandler(failure -> {
@@ -129,7 +130,7 @@ public class StandardAuth extends AbstractAuth<ApiKeyAuthReporter> {
 
     private void flushCache() {
         logger.debug("Invalidating cache");
-        authCache.invalidate(config, request, keyElems);
+        AUTH_CACHE.invalidate(config, request, keyElems);
     }
 
     @Override
@@ -142,11 +143,4 @@ public class StandardAuth extends AbstractAuth<ApiKeyAuthReporter> {
         this.policyFailureHandler = policyFailureHandler;
         return this;
     }
-
-    @Override
-    public StandardAuth setAuthCache(ICachingAuthenticator authCache) {
-        this.authCache = authCache;
-        return this;
-    }
-
 }

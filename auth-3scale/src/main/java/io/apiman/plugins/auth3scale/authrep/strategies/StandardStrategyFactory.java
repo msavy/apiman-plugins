@@ -14,20 +14,28 @@
  * limitations under the License.
  */
 
-package io.apiman.plugins.auth3scale.authrep;
+package io.apiman.plugins.auth3scale.authrep.strategies;
 
 import io.apiman.gateway.engine.beans.ApiRequest;
 import io.apiman.gateway.engine.beans.ApiResponse;
 import io.apiman.gateway.engine.policy.IPolicyContext;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
+import io.apiman.plugins.auth3scale.authrep.IAuthStrategyFactory;
 
-public interface IAuthStrategyFactory {
-    AbstractAuth getAuthStrategy(Content config,
+public class StandardStrategyFactory implements IAuthStrategyFactory {
+    @Override
+    public StandardAuth getAuthStrategy(Content config,
             ApiRequest request,
-            IPolicyContext context);
+            IPolicyContext context) {
+        return new StandardAuth(config, request, context);
+    }
 
-    AbstractRep getRepStrategy(Content config,
+    @Override
+    public StandardRep getRepStrategy(Content config,
             ApiRequest request,
             ApiResponse response,
-            IPolicyContext context);
+            IPolicyContext context) {
+        return new StandardRep(config, request, response, context);
+    }
+
 }

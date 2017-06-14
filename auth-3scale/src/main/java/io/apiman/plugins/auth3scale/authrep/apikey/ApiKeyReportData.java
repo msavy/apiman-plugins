@@ -53,6 +53,7 @@ public class ApiKeyReportData implements ReportData {
         return this;
     }
 
+    @Override
     public String getServiceToken() {
         return serviceToken;
     }
@@ -71,6 +72,7 @@ public class ApiKeyReportData implements ReportData {
         return this;
     }
 
+    @Override
     public String getServiceId() {
         return serviceId;
     }
@@ -84,6 +86,7 @@ public class ApiKeyReportData implements ReportData {
         return timestamp;
     }
 
+    @Override
     public ApiKeyReportData setTimestamp(String timestamp) {
         this.timestamp = timestamp;
         return this;
@@ -119,7 +122,7 @@ public class ApiKeyReportData implements ReportData {
     }
 
     @Override
-    public int groupId() {
+    public int bucketId() {
         return hashCode();
     }
 
@@ -173,16 +176,20 @@ public class ApiKeyReportData implements ReportData {
     }
 
     @Override
-    public String encode() {
+    public ParameterMap toParameterMap() {
       ParameterMap paramMap = new ParameterMap();
       paramMap.add(USER_KEY, getUserKey());
       paramMap.add(SERVICE_TOKEN, getServiceToken());// maybe use endpoint properties or something. or new properties field.
       paramMap.add(SERVICE_ID, getServiceId());
       paramMap.add(USAGE, getUsage());
-      paramMap.add(LOG, getLog());
-
+      setIfNotNull(paramMap, LOG, getLog());
       setIfNotNull(paramMap, REFERRER, getReferrer());
       setIfNotNull(paramMap, USER_ID, getUserId());
-      return paramMap.encode();
+      return paramMap;
+    }
+
+    @Override
+    public String encode() {
+        return toParameterMap().encode();
     }
 }
