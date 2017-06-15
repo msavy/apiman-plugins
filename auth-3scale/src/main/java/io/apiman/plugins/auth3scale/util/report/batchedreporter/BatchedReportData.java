@@ -16,14 +16,11 @@
 
 package io.apiman.plugins.auth3scale.util.report.batchedreporter;
 
-import io.apiman.gateway.engine.async.IAsyncHandler;
+import io.apiman.gateway.engine.beans.ApiRequest;
+import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
 
-import java.util.List;
-
-public interface IReporter {
-
-    List<ReportToSend> encode();
-
-    IReporter setFullHandler(IAsyncHandler<Void> fullHandler);
-
+public interface BatchedReportData extends ReportData {
+    ApiRequest getRequest();
+    Object[] getKeyElems();
+    Content getConfig();
 }

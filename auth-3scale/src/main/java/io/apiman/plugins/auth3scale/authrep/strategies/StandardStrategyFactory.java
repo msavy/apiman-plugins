@@ -23,11 +23,13 @@ import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
 import io.apiman.plugins.auth3scale.authrep.IAuthStrategyFactory;
 
 public class StandardStrategyFactory implements IAuthStrategyFactory {
+    StandardAuthCache authCache = new StandardAuthCache();
+
     @Override
     public StandardAuth getAuthStrategy(Content config,
             ApiRequest request,
             IPolicyContext context) {
-        return new StandardAuth(config, request, context);
+        return new StandardAuth(config, request, context, authCache);
     }
 
     @Override
@@ -35,7 +37,7 @@ public class StandardStrategyFactory implements IAuthStrategyFactory {
             ApiRequest request,
             ApiResponse response,
             IPolicyContext context) {
-        return new StandardRep(config, request, response, context);
+        return new StandardRep(config, request, response, context, authCache);
     }
 
 }

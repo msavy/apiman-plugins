@@ -131,7 +131,7 @@ public class StandardAuth extends AbstractAuth {
         get.end();
     }
 
-    private void flushCache() {
+    protected void flushCache() {
         logger.debug("Invalidating cache");
         authCache.invalidate(config, request, keyElems);
     }

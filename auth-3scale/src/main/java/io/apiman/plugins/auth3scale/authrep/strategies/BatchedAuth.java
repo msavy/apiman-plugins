@@ -26,11 +26,10 @@ import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
  *
  * @author Marc Savy {@literal <marc@rhymewithgravy.com>}
  */
-public class BatchedAuth extends StandardAuth {
+public class BatchedAuth {
     private final BatchedAuthCache heuristicCache;
     private Content config;
     private ApiRequest request;
-    private IPolicyContext context;
     private Object[] keyElems;
 
     public BatchedAuth(Content config,
@@ -38,10 +37,9 @@ public class BatchedAuth extends StandardAuth {
             IPolicyContext context,
             StandardAuthCache standardAuthCache,
             BatchedAuthCache heuristicCache) {
-        super(config, request, context, standardAuthCache);
+        //super(config, request, context, standardAuthCache);
         this.config = config;
         this.request = request;
-        this.context = context;
         this.heuristicCache = heuristicCache;
     }
 
@@ -56,12 +54,25 @@ public class BatchedAuth extends StandardAuth {
         // A cache entry at this level implies that we are forcing standard auth.
         // because a batch was recently flushed and we want to try to ensure we
         // catch the rate limiting state updates as quickly as possible.
-        // TODO make integer to force N number of async authreps after flush
-        if (heuristicCache.isAuthCached(config, request, keyElems)) {
-            super.doBlockingAuthRep(resultHandler);
-        } else {
-            super.auth(resultHandler);
-        }
+        // TODO could use time instead of number of requests?
+//        System.out.println("DO BLOCKING?");
+//        if (heuristicCache.isAuthCached(config, request, keyElems)) {
+//            System.out.println("IS IN HEURISTIC CACHE; DO BLOCKING AUTHREP");
+//            super.doBlockingAuthRep(resultHandler);
+//            // This will decrement the cache by 1.
+//            System.out.println("DECREMENTING HEURISTIC COUNTER");
+//            heuristicCache.invalidate(config, request, keyElems);
+//        } else {
+//            System.out.println("NO CACHE ENTRY; GOING FROM SCRATCH");
+//            super.auth(resultHandler);
+//        }
+//        return this;
+
+        super.auth(result -> {
+            if (result.isSuccess()) {
+
+            }
+        });
         return this;
     }
 }

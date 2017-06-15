@@ -34,10 +34,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Marc Savy {@literal <msavy@redhat.com>}
  * @param <T> extends ReportData
  */
-public class Reporter<T extends ReportData> {
+public class Reporter<T extends BatchedReportData> implements IReporter {
     private final URI endpoint;
     private IAsyncHandler<Void> fullHandler;
-    private IAsyncResultHandler<List<ReportData>> flushHandler;
+    private IAsyncResultHandler<List<BatchedReportData>> flushHandler;
 
     protected final Map<Integer, ArrayBlockingQueue<T>> reportBuckets = new ConcurrentHashMap<>();
     protected static final int DEFAULT_LIST_CAPAC = 800;
@@ -48,6 +48,7 @@ public class Reporter<T extends ReportData> {
         this.endpoint = endpoint;
     }
 
+    @Override
     public List<ReportToSend> encode() {
         List<ReportToSend> encodedReports = new ArrayList<>(reportBuckets.size());
         // For each bucket
@@ -56,7 +57,7 @@ public class Reporter<T extends ReportData> {
                 continue;
             }
             // Drain TODO Small chance of brief blocking; can rework easily if this becomes a problem.
-            List<ReportData> reports = new ArrayList<>(bucket.size());
+            List<BatchedReportData> reports = new ArrayList<>(bucket.size());
             bucket.drainTo(reports);
             encodedReports.add(new ReportToSendImpl(endpoint, reports, flushHandler));
         }
@@ -73,11 +74,12 @@ public class Reporter<T extends ReportData> {
         return this;
     }
 
-    public Reporter<T> flushHandler(IAsyncResultHandler<List<ReportData>> flushHandler) {
+    public Reporter<T> flushHandler(IAsyncResultHandler<List<BatchedReportData>> flushHandler) {
         this.flushHandler = flushHandler;
         return this;
     }
 
+    @Override
     public Reporter<T> setFullHandler(IAsyncHandler<Void> fullHandler) {
         this.fullHandler = fullHandler;
         return this;
@@ -89,12 +91,12 @@ public class Reporter<T extends ReportData> {
 
     private static final class ReportToSendImpl implements ReportToSend {
         private final URI endpoint;
-        private final List<ReportData> reports;
-        private IAsyncResultHandler<List<ReportData>> flushHandler;
+        private final List<BatchedReportData> reports;
+        private IAsyncResultHandler<List<BatchedReportData>> flushHandler;
 
         public ReportToSendImpl(URI endpoint,
-                List<ReportData> reports,
-                IAsyncResultHandler<List<ReportData>> flushHandler) {
+                List<BatchedReportData> reports,
+                IAsyncResultHandler<List<BatchedReportData>> flushHandler) {
             this.endpoint = endpoint;
             this.reports = reports;
             this.flushHandler = flushHandler;
@@ -129,7 +131,7 @@ public class Reporter<T extends ReportData> {
             if (reportResponse.isSuccess()) {
                 flushHandler.handle(AsyncResultImpl.create(reports));
             } else { // Flushing failed! Likely same result -- want to flush from cache somewhere.
-                flushHandler.handle(new IAsyncResult<List<ReportData>>() {
+                flushHandler.handle(new IAsyncResult<List<BatchedReportData>>() {
 
                     @Override
                     public boolean isSuccess() {
@@ -142,7 +144,7 @@ public class Reporter<T extends ReportData> {
                     }
 
                     @Override
-                    public List<ReportData> getResult() {
+                    public List<BatchedReportData> getResult() {
                         return reports;
                     }
 

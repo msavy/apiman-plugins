@@ -22,45 +22,39 @@ import io.apiman.gateway.engine.policy.IPolicyContext;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
 import io.apiman.plugins.auth3scale.authrep.AbstractAuthRepBase;
 import io.apiman.plugins.auth3scale.authrep.AbstractRep;
+import io.apiman.plugins.auth3scale.util.ParameterMap;
+import io.apiman.plugins.auth3scale.util.report.batchedreporter.BatchedReportData;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.ReportData;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.Reporter;
 
 public class BatchedRep extends AbstractRep {
-    private Content config;
-    private ApiRequest request;
-    private ApiResponse response;
-    private IPolicyContext context;
+    private final Content config;
+    private final ApiRequest request;
+    private final Reporter<BatchedReportData> reporter;
+    private final IPolicyContext context;
     private Object[] keyElems;
     private ReportData report;
-    private Reporter<? super ReportData> reporter;
-
-    private final StandardAuthCache standardCache;
-    private final BatchedAuthCache heuristicCache;
 
     public BatchedRep(Content config,
             ApiRequest request,
             ApiResponse response,
             IPolicyContext context,
-            StandardAuthCache standardCache,
-            BatchedAuthCache heuristicCache) {
+            Reporter<BatchedReportData> reporter) {
         super();
         this.config = config;
         this.request = request;
-        this.response = response;
         this.context = context;
-        this.standardCache = standardCache;
-        this.heuristicCache = heuristicCache;
+        this.reporter = reporter;
     }
 
     @Override
     public AbstractRep rep() {
-        reporter.addRecord(report);
+        // If was a blocking request then we already reported, so do nothing.
+        System.out.println("context.getAttribute(\"3scale.blocking\", false) " + context.getAttribute("3scale.blocking", false));
+        if (context.getAttribute("3scale.blocking", false)) //$NON-NLS-1$
+            return this;
 
-//        reporter.flushHandler(result -> {
-//            // AUTH_CACHE.invalidate(config, request, );
-//            ReportData entry = result.getResult().get(0);
-//            standardCache.invalidate(config, entry.getRequest(), keyElems);
-//        });
+        reporter.addRecord(new BatchedReportDataWrapper(config, report, request, keyElems));
         return this;
     }
 
@@ -74,6 +68,77 @@ public class BatchedRep extends AbstractRep {
     public AbstractAuthRepBase setReport(ReportData report) {
         this.report = report;
         return this;
+    }
+
+    // TODO quite heavy-weight carrying around lots of req objects. Think of how to cleanly optimise.
+    private static final class BatchedReportDataWrapper implements BatchedReportData {
+        private final Content config;
+        private final ReportData reportData;
+        private final ApiRequest request;
+        private final Object[] keyElems;
+
+        public BatchedReportDataWrapper(Content config, ReportData reportData, ApiRequest request, Object... keyElems) {
+            this.config = config;
+            this.reportData = reportData;
+            this.request = request;
+            this.keyElems = keyElems;
+        }
+
+        @Override
+        public BatchedReportDataWrapper setTimestamp(String timestamp) {
+            reportData.setTimestamp(timestamp);
+            return this;
+        }
+
+        @Override
+        public ParameterMap getUsage() {
+            return reportData.getUsage();
+        }
+
+        @Override
+        public ParameterMap getLog() {
+            return reportData.getLog();
+        }
+
+        @Override
+        public int bucketId() {
+            return reportData.bucketId();
+        }
+
+        @Override
+        public String getServiceToken() {
+            return reportData.getServiceToken();
+        }
+
+        @Override
+        public String getServiceId() {
+            return reportData.getServiceId();
+        }
+
+        @Override
+        public String encode() {
+            return reportData.encode();
+        }
+
+        @Override
+        public ParameterMap toParameterMap() {
+            return reportData.toParameterMap();
+        }
+
+        @Override
+        public ApiRequest getRequest() {
+            return request;
+        }
+
+        @Override
+        public Object[] getKeyElems() {
+            return keyElems;
+        }
+
+        @Override
+        public Content getConfig() {
+            return config;
+        }
     }
 
 }

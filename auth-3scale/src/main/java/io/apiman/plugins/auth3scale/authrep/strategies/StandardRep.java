@@ -44,18 +44,19 @@ public class StandardRep extends AbstractRep {
     private final IPolicyFailureFactoryComponent failureFactory;
     private final IApimanLogger logger;
 
-    private StandardAuthCache authCache = StandardAuth.AUTH_CACHE;
+    private StandardAuthCache authCache;
     private Object[] keyElems;
     private ReportData report;
     private IPolicyContext context;
 
-    public StandardRep(Content config, ApiRequest request, ApiResponse response, IPolicyContext context) {
+    public StandardRep(Content config, ApiRequest request, ApiResponse response, IPolicyContext context, StandardAuthCache authCache) {
         this.config = config;
         this.request = request;
         this.context = context;
         this.httpClient = context.getComponent(IHttpClientComponent.class);
         this.failureFactory = context.getComponent(IPolicyFailureFactoryComponent.class);
         this.logger = context.getLogger(StandardRep.class);
+        this.authCache = authCache;
     }
 
     // Rep seems to require POST with URLEncoding
@@ -72,7 +73,7 @@ public class StandardRep extends AbstractRep {
                     // At this point can't do anything but log it.
                     logger.debug("Async AuthRep failure code {0} on: {1}",  failure.getResponseCode(), report);
                 })
-                .exceptionHandler(ex -> AsyncResultImpl.create(ex))
+                .exceptionHandler(AsyncResultImpl::create)
                 .statusHandler(status -> {
                     if (!status.isAuthorized() || rateLimitReached(status)) {
                         flushCache();

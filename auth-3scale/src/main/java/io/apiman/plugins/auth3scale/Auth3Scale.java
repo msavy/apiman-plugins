@@ -43,12 +43,23 @@ import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Auth3Sca
 @SuppressWarnings("nls")
 public class Auth3Scale extends AbstractMappedPolicy<Auth3ScaleBean> {
     private static final String AUTH3SCALE_REQUEST = "Auth3Scale.Req";
-    private static final AuthRep AUTH3SCALE = new AuthRep();
+    private AuthRep auth3scale;
+    private volatile boolean init = false;
+
+    private void init(IPolicyContext context) {
+        if (!init) {
+            synchronized (this) {
+                auth3scale = new AuthRep(context);
+            }
+        }
+    }
 
     @Override
     protected void doApply(ApiRequest request, IPolicyContext context, Auth3ScaleBean config, IPolicyChain<ApiRequest> chain) {
+        init(context);
+
         try {
-        AUTH3SCALE.getAuth(config.getThreescaleConfig().getProxyConfig().getContent(), request, context)
+            auth3scale.getAuth(config, request, context)
                 // If a policy failure occurs, call chain.doFailure.
                 .policyFailureHandler(chain::doFailure)
                 // If succeeded or error.
@@ -72,10 +83,8 @@ public class Auth3Scale extends AbstractMappedPolicy<Auth3ScaleBean> {
         try {
         // Just let it go ahead, and report stuff at our leisure.
         chain.doApply(response);
-
         ApiRequest request = context.getAttribute(AUTH3SCALE_REQUEST, null);
-        AUTH3SCALE.getRep(config.getThreescaleConfig().getProxyConfig().getContent(), response, request, context)
-            .rep();
+        auth3scale.getRep(config, response, request, context).rep();
         } catch (Exception e) {
             e.printStackTrace();
         }

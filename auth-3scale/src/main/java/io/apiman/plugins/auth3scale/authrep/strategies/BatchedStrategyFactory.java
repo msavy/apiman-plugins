@@ -22,22 +22,29 @@ import io.apiman.gateway.engine.policy.IPolicyContext;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
 import io.apiman.plugins.auth3scale.authrep.AuthRepConstants;
 import io.apiman.plugins.auth3scale.authrep.IAuthStrategyFactory;
+import io.apiman.plugins.auth3scale.util.report.batchedreporter.BatchedReportData;
+import io.apiman.plugins.auth3scale.util.report.batchedreporter.BatchedReporter;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.Reporter;
 
 public class BatchedStrategyFactory implements IAuthStrategyFactory {
     // move stuff here
     // is this safe for mixing multiple different types? probably not.
     // Maybe caller should sort that out (seems better)
-    private Reporter<?> reporter = new Reporter<>(AuthRepConstants.REPORT_URI); // TODO use config!
+    private Reporter<BatchedReportData> reporter = new Reporter<>(AuthRepConstants.REPORT_URI);
     private StandardAuthCache standardCache = new StandardAuthCache();
     private BatchedAuthCache heuristicCache = new BatchedAuthCache();
 
-    {
-//        reporter.flushHandler(result -> {
-//            // AUTH_CACHE.invalidate(config, request, );
-//            ReportData entry = result.getResult().get(0);
-//            standardCache.invalidate(config, entry.getRequest(), keyElems);
-//        });
+    public BatchedStrategyFactory(BatchedReporter batchedReporter) {
+        reporter.flushHandler(result -> {
+            BatchedReportData entry = result.getResult().get(0);
+            // Invalidate standard cache to ensure next request goes through blocking authrep
+            standardCache.invalidate(entry.getConfig(), entry.getRequest(), entry.getKeyElems());
+            // Make cache entry in heuristic cache to force subsequent N entries to be blocking authrep
+            // with the hope that the backend has caught up and we will catch the updated rate limiting status.
+            heuristicCache.cache(entry.getConfig(), entry.getRequest(), entry.getKeyElems());
+        });
+
+        batchedReporter.addReporter(reporter);
     }
 
     @Override
@@ -52,7 +59,7 @@ public class BatchedStrategyFactory implements IAuthStrategyFactory {
             ApiRequest request,
             ApiResponse response,
             IPolicyContext context) {
-        return new BatchedRep(config, request, response, context, standardCache, heuristicCache);
+        return new BatchedRep(config, request, response, context, reporter);
     }
 
 }

@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 
 public class BatchedAuthCache extends AbstractCachingAuthenticator<AtomicInteger> {
-
     private static final AtomicInteger SENTINEL = new AtomicInteger(-1);
     private static final AtomicInteger DEFAULT_AUTHREP_COUNT = new AtomicInteger(5);
 
@@ -51,11 +50,14 @@ public class BatchedAuthCache extends AbstractCachingAuthenticator<AtomicInteger
 
     @Override
     public BatchedAuthCache invalidate(Content config, ApiRequest req, Object... elems) {
-        lruCache.invalidate(getCacheKey(config, req, elems));
+        int val = getAndDecrement(config, req, elems);
+        if (val <= 0) {
+            lruCache.invalidate(getCacheKey(config, req, elems));
+        }
         return this;
     }
 
-    public int getAndDecrement(Content config, ApiRequest req, Object... elems) {
+    private int getAndDecrement(Content config, ApiRequest req, Object... elems) {
         try {
             return lruCache.get(getCacheKey(config, req, elems), () -> SENTINEL).getAndDecrement();
         } catch (ExecutionException e) {
