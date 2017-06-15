@@ -15,16 +15,20 @@
  */
 package io.apiman.plugins.auth3scale.util.report.batchedreporter;
 
+import io.apiman.gateway.engine.async.AsyncResultImpl;
 import io.apiman.gateway.engine.async.IAsyncHandler;
+import io.apiman.gateway.engine.async.IAsyncResult;
+import io.apiman.gateway.engine.async.IAsyncResultHandler;
 import io.apiman.plugins.auth3scale.authrep.AuthRepConstants;
 import io.apiman.plugins.auth3scale.util.ParameterMap;
+import io.apiman.plugins.auth3scale.util.report.ReportResponseHandler.ReportResponse;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * @author Marc Savy {@literal <msavy@redhat.com>}
@@ -33,9 +37,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class Reporter<T extends ReportData> {
     private final URI endpoint;
     private IAsyncHandler<Void> fullHandler;
-    private IAsyncHandler<List<T>> flushHandler;
+    private IAsyncResultHandler<List<ReportData>> flushHandler;
 
-    protected final Map<Integer, ConcurrentLinkedQueue<T>> reportBuckets = new ConcurrentHashMap<>();
+    protected final Map<Integer, ArrayBlockingQueue<T>> reportBuckets = new ConcurrentHashMap<>();
     protected static final int DEFAULT_LIST_CAPAC = 800;
     protected static final int FULL_TRIGGER_CAPAC = 500;
     protected static final int MAX_RECORDS = 1000;
@@ -46,34 +50,21 @@ public class Reporter<T extends ReportData> {
 
     public List<ReportToSend> encode() {
         List<ReportToSend> encodedReports = new ArrayList<>(reportBuckets.size());
-        for (ConcurrentLinkedQueue<T> queue : reportBuckets.values()) {
-            if (queue.isEmpty()) {
+        // For each bucket
+        for (ArrayBlockingQueue<T> bucket : reportBuckets.values()) {
+            if (bucket.isEmpty()) {
                 continue;
             }
-            // Get report
-            T reportData = queue.poll();
-            // 2 mandatory top-level items
-            ParameterMap data = new ParameterMap();
-            data.add(AuthRepConstants.SERVICE_TOKEN, reportData.getServiceToken());
-            data.add(AuthRepConstants.SERVICE_ID, reportData.getServiceId());
-            // Rest is array of transactions
-            List<ParameterMap> transactions = new ArrayList<>(); // TODO approximate - size() is O(n) on linkedqueue, so don't use that.
-            int i = 0;
-            do {
-                transactions.add(reportData.toParameterMap());
-                i++;
-                reportData = queue.poll();
-            } while (reportData != null && i < MAX_RECORDS);
-            // Get underlying array.
-            data.add(AuthRepConstants.TRANSACTIONS, transactions.toArray(new ParameterMap[0]));
-            // System.out.println("data about to be encoded... " + reportData);
-            encodedReports.add(new ReportToSendImpl(endpoint, data));
+            // Drain TODO Small chance of brief blocking; can rework easily if this becomes a problem.
+            List<ReportData> reports = new ArrayList<>(bucket.size());
+            bucket.drainTo(reports);
+            encodedReports.add(new ReportToSendImpl(endpoint, reports, flushHandler));
         }
         return encodedReports;
     }
 
     public Reporter<T> addRecord(T record) {
-        ConcurrentLinkedQueue<T> reportGroup = reportBuckets.computeIfAbsent(record.bucketId(), k -> new ConcurrentLinkedQueue<>());
+        ArrayBlockingQueue<T> reportGroup = reportBuckets.computeIfAbsent(record.bucketId(), k -> new ArrayBlockingQueue<>(100));
         reportGroup.add(record);
         // This is just approximate, we don't care whether it's somewhat out.
         if (reportGroup.size() >= FULL_TRIGGER_CAPAC) {
@@ -82,7 +73,7 @@ public class Reporter<T extends ReportData> {
         return this;
     }
 
-    public Reporter<T> flushHandler(IAsyncHandler<List<T>> flushHandler) {
+    public Reporter<T> flushHandler(IAsyncResultHandler<List<ReportData>> flushHandler) {
         this.flushHandler = flushHandler;
         return this;
     }
@@ -98,24 +89,33 @@ public class Reporter<T extends ReportData> {
 
     private static final class ReportToSendImpl implements ReportToSend {
         private final URI endpoint;
-        private final ParameterMap data;
-        private IAsyncHandler<Void> flushHandler;
+        private final List<ReportData> reports;
+        private IAsyncResultHandler<List<ReportData>> flushHandler;
 
-        ReportToSendImpl(URI endpoint,
-                ParameterMap data,
-                IAsyncHandler<ParameterMap> flushHandler) {
+        public ReportToSendImpl(URI endpoint,
+                List<ReportData> reports,
+                IAsyncResultHandler<List<ReportData>> flushHandler) {
             this.endpoint = endpoint;
-            this.data = data;
+            this.reports = reports;
             this.flushHandler = flushHandler;
         }
 
         @Override
         public String getData() {
+            // 2 mandatory top-level items
+            ParameterMap data = new ParameterMap();
+            data.add(AuthRepConstants.SERVICE_TOKEN, reports.get(0).getServiceToken());
+            data.add(AuthRepConstants.SERVICE_ID, reports.get(0).getServiceId());
+            List<ParameterMap> transactions = new ArrayList<>();
+            // Build transactions list.
+            reports.stream().forEach(report -> transactions.add(report.toParameterMap()));
+            // Get array representation.
+            data.add(AuthRepConstants.TRANSACTIONS, transactions.toArray(new ParameterMap[0]));
             return data.encode();
         }
 
         @Override
-        public String getEncoding() {
+        public String getContentType() {
             return "application/x-www-form-urlencoded"; //$NON-NLS-1$
         }
 
@@ -125,8 +125,33 @@ public class Reporter<T extends ReportData> {
         }
 
         @Override
-        public void flushed() {
+        public void flush(IAsyncResult<ReportResponse> reportResponse) {
+            if (reportResponse.isSuccess()) {
+                flushHandler.handle(AsyncResultImpl.create(reports));
+            } else { // Flushing failed! Likely same result -- want to flush from cache somewhere.
+                flushHandler.handle(new IAsyncResult<List<ReportData>>() {
 
+                    @Override
+                    public boolean isSuccess() {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean isError() {
+                        return true;
+                    }
+
+                    @Override
+                    public List<ReportData> getResult() {
+                        return reports;
+                    }
+
+                    @Override
+                    public Throwable getError() {
+                        return new RuntimeException("Reporting failed; see #getResult for failed entries."); //$NON-NLS-1$
+                    }
+                });
+            }
         }
     }
 

@@ -20,14 +20,31 @@ import io.apiman.gateway.engine.beans.ApiRequest;
 import io.apiman.gateway.engine.beans.ApiResponse;
 import io.apiman.gateway.engine.policy.IPolicyContext;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
+import io.apiman.plugins.auth3scale.authrep.AuthRepConstants;
 import io.apiman.plugins.auth3scale.authrep.IAuthStrategyFactory;
+import io.apiman.plugins.auth3scale.util.report.batchedreporter.Reporter;
 
 public class BatchedStrategyFactory implements IAuthStrategyFactory {
+    // move stuff here
+    // is this safe for mixing multiple different types? probably not.
+    // Maybe caller should sort that out (seems better)
+    private Reporter<?> reporter = new Reporter<>(AuthRepConstants.REPORT_URI); // TODO use config!
+    private StandardAuthCache standardCache = new StandardAuthCache();
+    private BatchedAuthCache heuristicCache = new BatchedAuthCache();
+
+    {
+//        reporter.flushHandler(result -> {
+//            // AUTH_CACHE.invalidate(config, request, );
+//            ReportData entry = result.getResult().get(0);
+//            standardCache.invalidate(config, entry.getRequest(), keyElems);
+//        });
+    }
+
     @Override
     public BatchedAuth getAuthStrategy(Content config,
             ApiRequest request,
             IPolicyContext context) {
-        return new BatchedAuth(config, request, context);
+        return new BatchedAuth(config, request, context, standardCache, heuristicCache);
     }
 
     @Override
@@ -35,7 +52,7 @@ public class BatchedStrategyFactory implements IAuthStrategyFactory {
             ApiRequest request,
             ApiResponse response,
             IPolicyContext context) {
-        return new BatchedRep(config, request, response, context);
+        return new BatchedRep(config, request, response, context, standardCache, heuristicCache);
     }
 
 }

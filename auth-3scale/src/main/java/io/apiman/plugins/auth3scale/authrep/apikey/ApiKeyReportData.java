@@ -19,6 +19,7 @@ import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.LOG;
 import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.REFERRER;
 import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.SERVICE_ID;
 import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.SERVICE_TOKEN;
+import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.TIMESTAMP;
 import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.USAGE;
 import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.USER_ID;
 import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.USER_KEY;
@@ -179,9 +180,10 @@ public class ApiKeyReportData implements ReportData {
     public ParameterMap toParameterMap() {
       ParameterMap paramMap = new ParameterMap();
       paramMap.add(USER_KEY, getUserKey());
-      paramMap.add(SERVICE_TOKEN, getServiceToken());// maybe use endpoint properties or something. or new properties field.
+      paramMap.add(SERVICE_TOKEN, getServiceToken());
       paramMap.add(SERVICE_ID, getServiceId());
       paramMap.add(USAGE, getUsage());
+      setIfNotNull(paramMap, TIMESTAMP, getTimestamp());
       setIfNotNull(paramMap, LOG, getLog());
       setIfNotNull(paramMap, REFERRER, getReferrer());
       setIfNotNull(paramMap, USER_ID, getUserId());

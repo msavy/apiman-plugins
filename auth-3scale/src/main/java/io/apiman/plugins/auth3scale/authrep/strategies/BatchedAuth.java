@@ -27,17 +27,22 @@ import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
  * @author Marc Savy {@literal <marc@rhymewithgravy.com>}
  */
 public class BatchedAuth extends StandardAuth {
-    public static final BatchedAuthCache HEURISTIC_CACHE = new BatchedAuthCache();
+    private final BatchedAuthCache heuristicCache;
     private Content config;
     private ApiRequest request;
     private IPolicyContext context;
     private Object[] keyElems;
 
-    public BatchedAuth(Content config, ApiRequest request, IPolicyContext context) {
-        super(config, request, context);
+    public BatchedAuth(Content config,
+            ApiRequest request,
+            IPolicyContext context,
+            StandardAuthCache standardAuthCache,
+            BatchedAuthCache heuristicCache) {
+        super(config, request, context, standardAuthCache);
         this.config = config;
         this.request = request;
         this.context = context;
+        this.heuristicCache = heuristicCache;
     }
 
     @Override
@@ -52,7 +57,7 @@ public class BatchedAuth extends StandardAuth {
         // because a batch was recently flushed and we want to try to ensure we
         // catch the rate limiting state updates as quickly as possible.
         // TODO make integer to force N number of async authreps after flush
-        if (HEURISTIC_CACHE.isAuthCached(config, request, keyElems)) {
+        if (heuristicCache.isAuthCached(config, request, keyElems)) {
             super.doBlockingAuthRep(resultHandler);
         } else {
             super.auth(resultHandler);

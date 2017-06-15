@@ -43,7 +43,8 @@ import io.apiman.plugins.auth3scale.util.report.batchedreporter.ReportData;
 public class StandardAuth extends AbstractAuth {
     // TODO Can't remember the place where we put the special exceptions for this...
     private static final AsyncResultImpl<Void> OK_CACHED = AsyncResultImpl.create((Void) null);
-    public static final StandardAuthCache AUTH_CACHE = new StandardAuthCache();
+
+    private final StandardAuthCache authCache;
 
     private final Content config;
     private final ApiRequest request;
@@ -59,7 +60,8 @@ public class StandardAuth extends AbstractAuth {
 
     public StandardAuth(Content config,
             ApiRequest request,
-            IPolicyContext context) {
+            IPolicyContext context,
+            StandardAuthCache authCache) {
         this.config = config;
         this.request = request;
         this.context = context;
@@ -67,6 +69,7 @@ public class StandardAuth extends AbstractAuth {
         this.failureFactory = context.getComponent(IPolicyFailureFactoryComponent.class);
         this.logger = context.getLogger(StandardAuth.class);
         this.serviceId = config.getProxy().getServiceId();
+        this.authCache = authCache;
     }
 
     @Override
@@ -86,7 +89,7 @@ public class StandardAuth extends AbstractAuth {
         // If we have no cache entry, then block. Otherwise, the request can immediately go
         // through and we will resolve the rate limiting status post hoc (various strategies
         // depending on settings).
-        if (AUTH_CACHE.isAuthCached(config, request, keyElems)) {
+        if (authCache.isAuthCached(config, request, keyElems)) {
             logger.debug("[ServiceId: {0}] Cached auth on request: {1}", serviceId, request);
             resultHandler.handle(OK_CACHED);
         } else {
@@ -96,7 +99,7 @@ public class StandardAuth extends AbstractAuth {
                 logger.debug("Blocking auth success?: {0}", result.isSuccess());
                 // Only cache if successful
                 if (result.isSuccess()) {
-                    AUTH_CACHE.cache(config, request, keyElems);
+                    authCache.cache(config, request, keyElems);
                 }
                 // Pass result up.
                 resultHandler.handle(result);
@@ -130,7 +133,7 @@ public class StandardAuth extends AbstractAuth {
 
     private void flushCache() {
         logger.debug("Invalidating cache");
-        AUTH_CACHE.invalidate(config, request, keyElems);
+        authCache.invalidate(config, request, keyElems);
     }
 
     @Override

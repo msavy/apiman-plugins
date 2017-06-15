@@ -21,9 +21,9 @@ import io.apiman.gateway.engine.beans.ApiResponse;
 import io.apiman.gateway.engine.policy.IPolicyContext;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
 import io.apiman.plugins.auth3scale.authrep.AbstractAuthRepBase;
-import io.apiman.plugins.auth3scale.authrep.AbstractCachingAuthenticator;
 import io.apiman.plugins.auth3scale.authrep.AbstractRep;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.ReportData;
+import io.apiman.plugins.auth3scale.util.report.batchedreporter.Reporter;
 
 public class BatchedRep extends AbstractRep {
     private Content config;
@@ -32,21 +32,35 @@ public class BatchedRep extends AbstractRep {
     private IPolicyContext context;
     private Object[] keyElems;
     private ReportData report;
+    private Reporter<? super ReportData> reporter;
 
-    private AbstractCachingAuthenticator HEURISTIC_CACHE = BatchedAuth.HEURISTIC_CACHE;
-    private AbstractCachingAuthenticator AUTH_CACHE = BatchedAuth.AUTH_CACHE;
+    private final StandardAuthCache standardCache;
+    private final BatchedAuthCache heuristicCache;
 
-    public BatchedRep(Content config, ApiRequest request, ApiResponse response, IPolicyContext context) {
+    public BatchedRep(Content config,
+            ApiRequest request,
+            ApiResponse response,
+            IPolicyContext context,
+            StandardAuthCache standardCache,
+            BatchedAuthCache heuristicCache) {
         super();
         this.config = config;
         this.request = request;
         this.response = response;
         this.context = context;
+        this.standardCache = standardCache;
+        this.heuristicCache = heuristicCache;
     }
 
     @Override
     public AbstractRep rep() {
-//        reporter.add(report);
+        reporter.addRecord(report);
+
+//        reporter.flushHandler(result -> {
+//            // AUTH_CACHE.invalidate(config, request, );
+//            ReportData entry = result.getResult().get(0);
+//            standardCache.invalidate(config, entry.getRequest(), keyElems);
+//        });
         return this;
     }
 
