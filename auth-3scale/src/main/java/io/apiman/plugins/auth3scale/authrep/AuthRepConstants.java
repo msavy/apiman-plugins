@@ -44,4 +44,6 @@ public interface AuthRepConstants {
     String CLIENT_ID = "client_id";
     String TIMESTAMP = "timestamp";
     String USAGE = "usage";
+
+    String BLOCKING_FLAG = "3scale.blocking";
 }

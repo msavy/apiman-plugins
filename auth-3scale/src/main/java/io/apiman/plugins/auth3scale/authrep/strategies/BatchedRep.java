@@ -17,6 +17,7 @@
 package io.apiman.plugins.auth3scale.authrep.strategies;
 
 import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.AUTHREP_PATH;
+import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.BLOCKING_FLAG;
 import static io.apiman.plugins.auth3scale.authrep.AuthRepConstants.DEFAULT_BACKEND;
 
 import io.apiman.common.logging.IApimanLogger;
@@ -37,6 +38,7 @@ import io.apiman.plugins.auth3scale.util.report.batchedreporter.BatchedReportDat
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.ReportData;
 import io.apiman.plugins.auth3scale.util.report.batchedreporter.Reporter;
 
+@SuppressWarnings("nls")
 public class BatchedRep extends AbstractRep {
     private final Content config;
     private final ApiRequest request;
@@ -57,7 +59,6 @@ public class BatchedRep extends AbstractRep {
             Reporter<BatchedReportData> reporter,
             StandardAuthCache authCache,
             BatchedAuthCache heuristicCache) {
-        //super(config, request, response, context, authCache);
         this.config = config;
         this.request = request;
         this.context = context;
@@ -72,11 +73,11 @@ public class BatchedRep extends AbstractRep {
     @Override
     public BatchedRep rep() {
         // If was a blocking request then we already reported, so do nothing.
-        if (context.getAttribute("3scale.blocking", false)) //$NON-NLS-1$
+        if (context.getAttribute(BLOCKING_FLAG, false))
             return this;
 
         // If the heuristic indicates that we should be doing standard async authrep, then... do that!
-        if (heuristicCache.isForceAsyncAuthRep(config, request, keyElems)) {
+        if (heuristicCache.shouldForceAsyncAuthRep(config, request, keyElems)) {
             doAsyncRep();
             // Decrement so that we don't continue doing standard async authrep indefinitely -- TODO could use time instead?
             heuristicCache.decrement(config, request, keyElems);
@@ -107,11 +108,10 @@ public class BatchedRep extends AbstractRep {
     }
 
     private boolean rateLimitReached(Status status) {
-        System.out.println(status);
         return status.getUsageReports()
             .stream()
             .filter(report -> report.getCurrentValue() == report.getMaxValue())
-            .filter(report -> config.getProxy().match(request.getDestination(), report.getMetric())) // TODO if metric is one relevant to this path.
+            .filter(report -> config.getProxy().match(request.getDestination(), report.getMetric()))
             .findFirst()
             .isPresent();
     }

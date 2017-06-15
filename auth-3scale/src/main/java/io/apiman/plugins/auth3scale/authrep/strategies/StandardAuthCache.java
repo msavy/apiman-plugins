@@ -32,7 +32,6 @@ public class StandardAuthCache extends AbstractCachingAuthenticator<Boolean> {
     @Override
     public boolean isAuthCached(Content config, ApiRequest req, Object... elems) {
         try {
-            System.out.println(getCacheKey(config, req, elems) + " @ "  + randomId);
             return lruCache.get(getCacheKey(config, req, elems), () -> false);
         } catch (ExecutionException e) {
             throw new UncheckedExecutionException(e);

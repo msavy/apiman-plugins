@@ -29,7 +29,7 @@ public class BatchedAuthCache extends AbstractCachingAuthenticator<AtomicInteger
     private static final AtomicInteger SENTINEL = new AtomicInteger(-1);
     private static final int DEFAULT_AUTHREP_COUNT = 5; // TODO make configurable
 
-    public boolean isForceAsyncAuthRep(Content config, ApiRequest req, Object... elems) {
+    public boolean shouldForceAsyncAuthRep(Content config, ApiRequest req, Object... elems) {
         return isAuthCached(config, req, elems);
     }
 
@@ -55,10 +55,6 @@ public class BatchedAuthCache extends AbstractCachingAuthenticator<AtomicInteger
     @Override
     public BatchedAuthCache invalidate(Content config, ApiRequest req, Object... elems) {
         lruCache.invalidate(getCacheKey(config, req, elems));
-//        int val = decrement(config, req, elems);
-//        if (val <= 0) {
-//            lruCache.invalidate(getCacheKey(config, req, elems));
-//        }
         return this;
     }
 

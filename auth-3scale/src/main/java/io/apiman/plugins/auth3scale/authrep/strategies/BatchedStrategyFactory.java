@@ -35,9 +35,7 @@ public class BatchedStrategyFactory implements IAuthStrategyFactory {
 
     public BatchedStrategyFactory(BatchedReporter batchedReporter) {
         reporter.flushHandler(result -> {
-            System.out.println("Flush handler called!");
             BatchedReportData entry = result.getResult().get(0);
-            // standardCache.invalidate(entry.getConfig(), entry.getRequest(), entry.getKeyElems());
             // Make cache entry in heuristic cache to force subsequent N entries to be blocking authrep
             // with the hope that the backend has caught up and we will catch the updated rate limiting status.
             heuristicCache.cache(entry.getConfig(), entry.getRequest(), entry.getKeyElems());

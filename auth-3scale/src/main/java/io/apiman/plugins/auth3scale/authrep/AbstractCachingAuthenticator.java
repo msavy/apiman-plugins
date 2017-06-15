@@ -87,8 +87,7 @@ public abstract class AbstractCachingAuthenticator<CacheValue> {
          */
         @Override
         public String toString() {
-            final int maxLen = 10;
-            return String.format("CacheKey [%d]", Arrays.deepHashCode(keyElems));
+            return String.format("CacheKey [%d]", Arrays.deepHashCode(keyElems)); //$NON-NLS-1$
         }
 
     }
