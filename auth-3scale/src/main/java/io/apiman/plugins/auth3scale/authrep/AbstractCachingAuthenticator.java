@@ -82,5 +82,14 @@ public abstract class AbstractCachingAuthenticator<CacheValue> {
             return true;
         }
 
+        /* (non-Javadoc)
+         * @see java.lang.Object#toString()
+         */
+        @Override
+        public String toString() {
+            final int maxLen = 10;
+            return String.format("CacheKey [%d]", Arrays.deepHashCode(keyElems));
+        }
+
     }
 }

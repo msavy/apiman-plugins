@@ -29,7 +29,6 @@ import io.apiman.gateway.engine.components.IPolicyFailureFactoryComponent;
 import io.apiman.gateway.engine.components.http.HttpMethod;
 import io.apiman.gateway.engine.components.http.IHttpClientRequest;
 import io.apiman.gateway.engine.policy.IPolicyContext;
-import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.AuthTypeEnum;
 import io.apiman.gateway.engine.vertx.polling.fetchers.threescale.beans.Content;
 import io.apiman.plugins.auth3scale.authrep.AbstractAuth;
 import io.apiman.plugins.auth3scale.authrep.AbstractAuthRepBase;
@@ -134,11 +133,6 @@ public class StandardAuth extends AbstractAuth {
     protected void flushCache() {
         logger.debug("Invalidating cache");
         authCache.invalidate(config, request, keyElems);
-    }
-
-    @Override
-    public AuthTypeEnum getType() {
-        return AuthTypeEnum.API_KEY;
     }
 
     @Override

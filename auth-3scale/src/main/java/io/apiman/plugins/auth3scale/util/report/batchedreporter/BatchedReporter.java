@@ -30,9 +30,9 @@ import java.util.Set;
  */
 @SuppressWarnings("nls")
 public class BatchedReporter {
-    private static final int DEFAULT_REPORTING_INTERVAL = 5;
+    private static final int DEFAULT_REPORTING_INTERVAL = 5000;
     private static final int DEFAULT_INITIAL_WAIT = 5;
-    private static final int DEFAULT_RETRY_QUEUE_MAXSIZE = 1000;
+    private static final int DEFAULT_RETRY_QUEUE_MAXSIZE = 7000;
     private int reportingInterval = DEFAULT_REPORTING_INTERVAL;
 
     // Change list to RingBuffer?
@@ -74,7 +74,7 @@ public class BatchedReporter {
         this.periodic = periodic;
 
         this.timerId = periodic.setPeriodicTimer(reportingInterval, DEFAULT_INITIAL_WAIT, id -> {
-            //System.out.println("tick! " + id + System.currentTimeMillis());
+//            System.out.println("tick! " + id + System.currentTimeMillis());
             send();
         });
         started = true;
